@@ -58,3 +58,4 @@ mvn -pl audit-service spring-boot:run
 - `file-service`: `curl http://localhost:8082/api/v1/health`
 - `share-service`: `curl http://localhost:8083/api/v1/health`
 - `audit-service`: `curl http://localhost:8084/api/v1/health`
+# SecureFileShare
