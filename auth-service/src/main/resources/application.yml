@@ -1,0 +1,82 @@
+# ==============================================================================
+# Auth Service Configuration (application.yml)
+# WHAT: Configures port 8081, PostgreSQL datasource for sfs_auth, Redis, JWT, and Flyway.
+# WHY: Supports registration, login, key validation, and token revocation.
+# ==============================================================================
+
+server:
+  # Dedicated port for auth-service
+  port: ${AUTH_SERVICE_PORT:8081}
+  servlet:
+    context-path: /api/v1
+
+spring:
+  application:
+    name: auth-service
+
+  # Database configuration pointing to sfs_auth database
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/sfs_auth
+    username: ${POSTGRES_USER:sfs_admin}
+    # Database password must come strictly from environment variables; no default fallback
+    # Why: Eliminates hardcoded secret leaks and enforces runtime environment configuration
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+
+  # JPA / Hibernate configuration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  # Flyway database migration configuration
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  # Redis connection configuration for rate limiting and token blacklisting
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      # Redis authentication password must come strictly from environment variables; no default fallback
+      # Why: Prevents unauthorized caching access and unauthenticated Redis connection defaults
+      password: ${REDIS_PASSWORD}
+      timeout: 2000ms
+
+# Cryptographic and JWT Configuration
+security:
+  jwt:
+    # Secret key used for signing HMAC-SHA256 tokens (minimum 256 bits / 32 characters)
+    # Why: Must be injected strictly from environment; hardcoded fallback removed to prevent key compromise
+    secret: ${JWT_SECRET}
+    # Short-lived token lifetime (15 minutes = 900,000 ms)
+    # Why: Short token expiration bounds exposure window if a token is intercepted
+    expiration-ms: ${JWT_EXPIRATION_MS:900000}
+  rate-limit:
+    # Maximum failed login attempts allowed per window
+    # Why: Stops automated online brute-force and credential stuffing attacks
+    max-attempts: 5
+    # Window duration in minutes
+    window-minutes: 15
+  admin:
+    # Initial admin seeding credentials (only created if no admin exists)
+    # Why: Must be provided via environment variables to prevent well-known credential seeding
+    initial-username: ${ADMIN_INITIAL_USERNAME}
+    initial-email: ${ADMIN_INITIAL_EMAIL}
+    initial-password: ${ADMIN_INITIAL_PASSWORD}
+
+# Actuator Health endpoint configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized

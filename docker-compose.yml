@@ -1,0 +1,104 @@
+# ==============================================================================
+# SecureFileShare - Local Development Infrastructure Services
+# WHAT: Orchestrates PostgreSQL 16, MinIO (S3-compatible storage), and Redis.
+# WHY: Provides isolated databases, object storage, and cache/rate-limiting
+#      containers matching production infrastructure requirements for local testing.
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  # ----------------------------------------------------------------------------
+  # PostgreSQL 16 Database Service
+  # WHAT: Primary relational database engine.
+  # WHY: Persists users, public key registry, encrypted file metadata, and share states.
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: sfs_postgres
+    restart: unless-stopped
+    environment:
+      # Initial superuser username for PostgreSQL maintenance
+      POSTGRES_USER: ${POSTGRES_USER:-sfs_admin}
+      # Initial superuser password (loaded from environment/.env for security)
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sfs_secure_pass_2026}
+      # Default maintenance database
+      POSTGRES_DB: postgres
+    ports:
+      # Exposes standard PostgreSQL port to host for Spring Boot microservices
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # Named persistent volume to retain database state across container restarts
+      - postgres_data:/var/lib/postgresql/data
+      # Initialization script executed on first container creation to create all service DBs
+      - ./docker/postgres/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sfs_admin} -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------------------------------
+  # MinIO S3-Compatible Object Storage Service
+  # WHAT: High-performance object storage server.
+  # WHY: Stores raw AES-256-GCM ciphertexts blindly without exposing plaintext to disk.
+  # ----------------------------------------------------------------------------
+  minio:
+    image: minio/minio:latest
+    container_name: sfs_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      # MinIO root admin username (access key)
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio_admin}
+      # MinIO root admin password (secret key)
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio_secret_pass_2026}
+    ports:
+      # S3 API port used by file-service SDK calls
+      - "${MINIO_API_PORT:-9000}:9000"
+      # Web Console port used by administrators for bucket inspection
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      # Named persistent volume to retain ciphertext objects
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------------------------------
+  # Redis In-Memory Cache and Rate-Limiter Service
+  # WHAT: Fast in-memory key-value data store.
+  # WHY: Handles distributed login rate limiting and JWT revocation (blacklist) tracking.
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: sfs_redis
+    restart: unless-stopped
+    command: >
+      sh -c 'redis-server --requirepass "${REDIS_PASSWORD:-redis_secure_pass_2026}"
+             --appendonly yes --save 60 1'
+    ports:
+      # Exposes standard Redis port for Spring Boot Lettuce connections
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      # Named persistent volume for Redis AOF (append-only file) persistence
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_secure_pass_2026}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+# ------------------------------------------------------------------------------
+# Named Persistent Storage Volumes
+# WHY: Ensures data survives across `docker compose down` and container rebuilds.
+# ------------------------------------------------------------------------------
+volumes:
+  postgres_data:
+    name: sfs_postgres_data
+  minio_data:
+    name: sfs_minio_data
+  redis_data:
+    name: sfs_redis_data

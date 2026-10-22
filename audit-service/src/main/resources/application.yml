@@ -1,0 +1,50 @@
+# ==============================================================================
+# Audit Service Configuration (application.yml)
+# WHAT: Configures port 8084, PostgreSQL datasource for sfs_audit, and Flyway.
+# WHY: Stores immutable, append-only security logs and compliance records.
+# ==============================================================================
+
+server:
+  # Dedicated port for audit-service
+  port: ${AUDIT_SERVICE_PORT:8084}
+  servlet:
+    context-path: /api/v1
+
+spring:
+  application:
+    name: audit-service
+
+  # Database configuration pointing to sfs_audit database
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/sfs_audit
+    username: ${POSTGRES_USER:sfs_admin}
+    # Database password must come strictly from environment variables; no default fallback
+    # Why: Eliminates hardcoded secret leaks and enforces runtime environment configuration
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+
+  # JPA / Hibernate configuration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  # Flyway schema migration configuration
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+# Actuator Health endpoint configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized

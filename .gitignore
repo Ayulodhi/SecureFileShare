@@ -1,0 +1,25 @@
+# Compiled class files and Maven build output
+target/
+*.class
+
+# Log files
+*.log
+
+# Sensitive environment credentials and keys
+.env
+*.local
+*.p12
+*.keystore
+.securefileshare/
+
+# IDE project metadata
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS metadata
+.DS_Store
+Thumbs.db

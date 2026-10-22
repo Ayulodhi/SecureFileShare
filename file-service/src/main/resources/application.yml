@@ -1,0 +1,91 @@
+# ==============================================================================
+# File Service Configuration (application.yml)
+# WHAT: Configures port 8082, PostgreSQL datasource, MinIO S3 client, and Flyway.
+# WHY: Allows encrypted storage handling while isolating file database connections.
+# ==============================================================================
+
+server:
+  # Dedicated port for file-service
+  port: ${FILE_SERVICE_PORT:8082}
+  servlet:
+    context-path: /api/v1
+
+spring:
+  application:
+    name: file-service
+
+  # Database configuration pointing to sfs_file database
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/sfs_file
+    username: ${POSTGRES_USER:sfs_admin}
+    # Database password must come strictly from environment variables; no default fallback
+    # Why: Eliminates hardcoded secret leaks and enforces runtime environment configuration
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+
+  # JPA / Hibernate configuration
+  jpa:
+    hibernate:
+      # Why 'validate': Prevents Hibernate from modifying tables, enforcing Flyway as the single source of truth
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  # Flyway schema migration configuration
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  # Multipart upload boundaries
+  servlet:
+    multipart:
+      # Security limit: Prevents disk/memory exhaustion from oversized ciphertext uploads
+      max-file-size: 100MB
+      max-request-size: 105MB
+
+# MinIO S3 Object Storage Configuration
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_ROOT_USER:minio_admin}
+  # MinIO secret key must come strictly from environment variables; no default fallback
+  # Why: Prevents storage credentials leak in source control
+  secret-key: ${MINIO_ROOT_PASSWORD}
+  bucket-name: ${MINIO_BUCKET_NAME:secure-files}
+
+# Security and Cryptographic Configuration
+security:
+  jwt:
+    # Secret key used for validating HMAC-SHA256 tokens (minimum 256 bits / 32 characters)
+    # Why: Must be injected strictly from environment; no default fallback to prevent token forgery
+    secret: ${JWT_SECRET}
+    expiration-ms: ${JWT_EXPIRATION_MS:900000}
+
+# File Upload Boundaries and Limits
+file:
+  # Enforces maximum allowable encrypted file payload in bytes (100MB default = 104,857,600 bytes)
+  # Why: Prevents disk/memory resource exhaustion attacks from oversized ciphertext uploads
+  max-size-bytes: ${FILE_MAX_SIZE_BYTES:104857600}
+
+# Downstream Microservices Integration
+services:
+  auth:
+    # URL of auth-service for fetching owner EC public keys for signature verification
+    # Why: Dynamic configuration allows service discovery or local development mapping
+    url: ${AUTH_SERVICE_URL:http://localhost:8081}
+
+# Actuator Health endpoint configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized
