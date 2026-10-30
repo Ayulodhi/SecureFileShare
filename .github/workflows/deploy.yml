@@ -52,12 +52,40 @@ jobs:
         # Why: Integration tests (e.g. FileServiceIntegrationTest) require active PostgreSQL and MinIO instances
         run: |
           docker compose up -d
-          until docker compose exec -T postgres pg_isready -U sfs_admin -d postgres; do
-            echo "Waiting for postgres to become healthy..."
+          # Wait for PostgreSQL to accept connections
+          for i in $(seq 1 30); do
+            if docker compose exec -T postgres pg_isready -U sfs_admin -d postgres 2>/dev/null; then
+              echo "Postgres is accepting connections."
+              break
+            fi
+            echo "Waiting for postgres ($i/30)..."
+            sleep 2
+          done
+          # Explicitly ensure all required service databases exist
+          docker compose exec -T postgres psql -U sfs_admin -d postgres -c "CREATE DATABASE sfs_auth;" || true
+          docker compose exec -T postgres psql -U sfs_admin -d postgres -c "CREATE DATABASE sfs_file;" || true
+          docker compose exec -T postgres psql -U sfs_admin -d postgres -c "CREATE DATABASE sfs_share;" || true
+          docker compose exec -T postgres psql -U sfs_admin -d postgres -c "CREATE DATABASE sfs_audit;" || true
+          # Wait for MinIO to be accessible
+          for i in $(seq 1 30); do
+            if curl -s -f http://localhost:9000/minio/health/live >/dev/null 2>&1; then
+              echo "MinIO is ready."
+              break
+            fi
+            echo "Waiting for minio ($i/30)..."
             sleep 2
           done
 
       - name: Execute clean verify
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: sfs_admin
+          POSTGRES_PASSWORD: sfs_secure_pass_2026
+          MINIO_ENDPOINT: http://localhost:9000
+          MINIO_ROOT_USER: minio_admin
+          MINIO_ROOT_PASSWORD: minio_secret_pass_2026
+          JAVA_TOOL_OPTIONS: "-Djava.awt.headless=true"
         run: ./mvnw -B clean verify --no-transfer-progress
 
   # ----------------------------------------------------------------------------
