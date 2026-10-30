@@ -72,6 +72,15 @@ jobs:
         # Why: Git permissions on Windows can strip executable bit from POSIX wrapper scripts
         run: chmod +x ./mvnw
 
+      - name: Start local test infrastructure (Postgres, MinIO, Redis)
+        # Why: Integration tests (e.g. FileServiceIntegrationTest) require active PostgreSQL and MinIO instances
+        run: |
+          docker compose up -d
+          until docker compose exec -T postgres pg_isready -U sfs_admin -d postgres; do
+            echo "Waiting for postgres to become healthy..."
+            sleep 2
+          done
+
       - name: Execute Maven build and unit tests
         # Why: "-B" enables non-interactive batch mode; "verify" runs test and integration-test phases
         run: ./mvnw -B clean verify --no-transfer-progress
@@ -98,16 +107,12 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4.2.2
 
-      - name: Set up Java 21 JDK
-        uses: actions/setup-java@v4.5.0
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'maven'
-
       - name: Run OWASP Dependency-Check Scanner
         # Why: Scans pom.xml dependencies against the National Vulnerability Database (NVD)
+        # Uses internal JRE bundled within the container action; unset JAVA_HOME prevents host path clash
         uses: dependency-check/Dependency-Check_Action@1.1.0
+        env:
+          JAVA_HOME: ""
         with:
           project: 'SecureFileShare'
           path: '.'
