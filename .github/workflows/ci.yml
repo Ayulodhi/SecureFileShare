@@ -107,22 +107,19 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4.2.2
 
-      - name: Run OWASP Dependency-Check Scanner
-        # Why: Scans pom.xml dependencies against the National Vulnerability Database (NVD)
-        # Uses internal JRE bundled within the container action; unset JAVA_HOME prevents host path clash
-        uses: dependency-check/Dependency-Check_Action@1.1.0
-        env:
-          JAVA_HOME: ""
+      - name: Set up Java 21 JDK
+        uses: actions/setup-java@v4.5.0
         with:
-          project: 'SecureFileShare'
-          path: '.'
-          format: 'HTML'
-          out: 'reports'
-          # Fail the build if any dependency has a CVSS vulnerability score of 8 (High) or higher
-          # Why: Enforces proactive remediation of critical dependencies before merging
-          args: >
-            --failOnCVSS 8
-            --enableRetired
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Grant execute permission to Maven wrapper
+        run: chmod +x ./mvnw
+
+      - name: Run OWASP Dependency-Check Scanner
+        # Why: Scans pom.xml dependencies against NVD via official Maven plugin; fails build if CVSS >= 8
+        run: ./mvnw -B org.owasp:dependency-check-maven:10.0.4:check -DfailBuildOnCVSS=8 -Dformat=HTML -DoutputDirectory=reports --no-transfer-progress
 
       - name: Archive Dependency-Check HTML Report
         if: always()
