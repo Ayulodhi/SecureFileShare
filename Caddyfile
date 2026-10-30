@@ -1,0 +1,132 @@
+# ==============================================================================
+# File: Caddyfile
+# WHAT: Reverse proxy configuration for SecureFileShare production deployment.
+# WHY: Terminates TLS with automated ACME certificate management, enforces HTTP/2 & HTTP/3,
+#      injects OWASP-recommended security headers, and reverse-proxies API routes to microservices.
+# ==============================================================================
+
+# Global configuration options
+{
+    # Suppress internal Caddy server version header across all responses
+    # Why: Eliminates server banner leakage during automated vulnerability scanning
+    servers {
+        trusted_proxies static private_ranges
+    }
+    # Log access events in structured JSON format to stdout for log aggregators
+    log {
+        output stdout
+        format json
+        level INFO
+    }
+}
+
+# Ingress site block parameterized by environment variable SERVER_DOMAIN
+# Why: Allows domain change via .env (e.g. sfs.example.com) without altering Caddyfile
+{$SERVER_DOMAIN:localhost} {
+
+    # --------------------------------------------------------------------------
+    # Hardened Security Response Headers
+    # WHAT: Injects defensive browser security headers on all proxied responses.
+    # WHY: Defense-in-depth against XSS, clickjacking, MIME-confusion, and credential leaks.
+    # --------------------------------------------------------------------------
+    header {
+        # Enforces HTTPS for 1 year, covers all subdomains, and requests browser HSTS preloading
+        # Why: Prevents SSL-stripping and man-in-the-middle downgrade attacks
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+        # Disables MIME-type sniffing by browsers
+        # Why: Prevents execution of malicious payloads disguised as safe file types
+        X-Content-Type-Options "nosniff"
+
+        # Blocks framing inside <iframe>, <frame>, or <object> tags
+        # Why: Completely eliminates UI redressing and clickjacking attack vectors
+        X-Frame-Options "DENY"
+
+        # Restricts HTTP Referer header to sending origin only over HTTPS
+        # Why: Prevents leaking sensitive URL query parameters or share tokens to third parties
+        Referrer-Policy "strict-origin-when-cross-origin"
+
+        # Strict Content Security Policy preventing unauthorized script and resource execution
+        # Why: Restricts execution environment since backend is an API gateway (no HTML rendering)
+        Content-Security-Policy "default-src 'none'; frame-ancestors 'none'; base-uri 'none';"
+
+        # Disables browser hardware access APIs
+        # Why: Prevents any potential script from accessing microphone, camera, or sensors
+        Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+
+        # Strips Server banner from HTTP response
+        # Why: Obscures underlying reverse proxy technology stack from passive fingerprinting
+        -Server
+    }
+
+    # Restrict maximum request body size (e.g. 100MB chunked ciphertext payload)
+    # Why: Mitigates denial-of-service (DoS) memory exhaustion from oversized multipart uploads
+    request_body {
+        max_size 100MB
+    }
+
+    # Enable response compression using Gzip and Zstandard
+    # Why: Reduces bandwidth consumption for JSON and key exchange payloads
+    encode zstd gzip
+
+    # --------------------------------------------------------------------------
+    # API Routing & Microservice Reverse Proxying
+    # WHAT: Routes paths to their corresponding internal backend microservice.
+    # WHY: Isolates services behind a single public TLS entry point; prevents direct exposure.
+    # --------------------------------------------------------------------------
+
+    # Health check probe for public gateway verification
+    handle /health {
+        respond "OK" 200
+    }
+
+    # Authentication & User Management Service (auth-service)
+    # Handles: Registration, Login, RSA/EC Key Registry, Token Refresh, Health
+    handle /api/v1/auth* {
+        reverse_proxy auth-service:8081 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+            header_up Host {upstream_hostport}
+        }
+    }
+
+    # Encrypted File Storage Service (file-service)
+    # Handles: Ciphertext upload/download, chunk integrity, metadata
+    handle /api/v1/files* {
+        reverse_proxy file-service:8082 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+            header_up Host {upstream_hostport}
+        }
+    }
+
+    # Share Management Service (share-service)
+    # Handles: HMAC share link generation, recipient authorizations, link revocation
+    handle /api/v1/shares* {
+        reverse_proxy share-service:8083 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+            header_up Host {upstream_hostport}
+        }
+    }
+
+    # Audit & Compliance Service (audit-service)
+    # Handles: Append-only security audit log events
+    handle /api/v1/audit* {
+        reverse_proxy audit-service:8084 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+            header_up Host {upstream_hostport}
+        }
+    }
+
+    # Fallback rule: Reject unmatched routes with 404
+    # Why: Default-deny routing avoids unintentional proxying or path traversal exposure
+    handle {
+        respond "Not Found" 404
+    }
+}

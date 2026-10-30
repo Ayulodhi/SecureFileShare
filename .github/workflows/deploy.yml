@@ -1,0 +1,294 @@
+# ==============================================================================
+# File: .github/workflows/deploy.yml
+# WHAT: Continuous Deployment (CD) pipeline for SecureFileShare.
+# WHY: Automatically verifies code, compiles linux/arm64 container images via Buildx & QEMU,
+#      publishes to GitHub Container Registry (GHCR), securely deploys to Oracle Cloud ARM VM via SSH,
+#      verifies microservice health probes, and performs an automatic rollback on any failure.
+# ==============================================================================
+
+name: CD Pipeline (Deploy to Production)
+
+on:
+  # Trigger on push to main branch (production release)
+  push:
+    branches:
+      - main
+  # Allow manual trigger with optional custom commit/tag
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+# Prevent concurrent deployments from colliding on the remote server
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  # ----------------------------------------------------------------------------
+  # Job 1: Pre-Deploy Verification
+  # WHAT: Runs test suite on main before initiating container image compilation.
+  # WHY: Guarantees that only tested, passing commits are built and deployed.
+  # ----------------------------------------------------------------------------
+  verify-tests:
+    name: Verify Code & Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4.2.2
+
+      - name: Set up Java 21 JDK
+        uses: actions/setup-java@v4.5.0
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Make Maven wrapper executable
+        run: chmod +x ./mvnw
+
+      - name: Execute clean verify
+        run: ./mvnw -B clean verify --no-transfer-progress
+
+  # ----------------------------------------------------------------------------
+  # Job 2: Build & Push Multi-Stage ARM64 Images
+  # WHAT: Compiles each microservice using QEMU and Docker Buildx for linux/arm64.
+  # WHY: Native execution on Oracle Cloud Ampere A1 ARM architecture with GHCR publishing.
+  # ----------------------------------------------------------------------------
+  build-and-push:
+    name: Build & Push ARM64 Images
+    runs-on: ubuntu-latest
+    needs: [verify-tests]
+    strategy:
+      fail-fast: true
+      matrix:
+        service:
+          - auth-service
+          - file-service
+          - share-service
+          - audit-service
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4.2.2
+
+      - name: Set up QEMU for ARM64 cross-platform emulation
+        # Why: Enables building linux/arm64 container binaries on standard GitHub x86_64 runners
+        uses: docker/setup-qemu-action@v3.2.0
+        with:
+          platforms: linux/arm64
+
+      - name: Set up Docker Buildx builder
+        # Why: Provides BuildKit features including multi-platform build and layer caching
+        uses: docker/setup-buildx-action@v3.7.1
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        # Why: Required to authenticate and push built images to ghcr.io repository
+        uses: docker/login-action@v3.3.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate lower-case image repository name
+        # Why: Docker image repository references must strictly be lowercase
+        id: repo-slug
+        run: echo "IMAGE_NAME=ghcr.io/${{ github.repository }}/${{ matrix.service }}" | tr '[:upper:]' '[:lower:]' >> "$GITHUB_OUTPUT"
+
+      - name: Build and push ARM64 image
+        # Why: Tags image with immutable commit SHA and rolling 'latest' pointer
+        uses: docker/build-push-action@v6.9.0
+        with:
+          context: .
+          file: ./${{ matrix.service }}/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ steps.repo-slug.outputs.IMAGE_NAME }}:${{ github.sha }}
+            ${{ steps.repo-slug.outputs.IMAGE_NAME }}:latest
+          # GitHub Actions cache reduces build times for unchanged Maven layers
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+  # ----------------------------------------------------------------------------
+  # Job 3: Zero-Downtime Deployment & Automatic Rollback
+  # WHAT: Deploys containers to Oracle Cloud VM over SSH, checks health, rolls back on failure.
+  # WHY: Ensures the target server is reliably updated without manual intervention or extended outages.
+  # ----------------------------------------------------------------------------
+  deploy-production:
+    name: Deploy to Oracle Cloud ARM VM
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    environment: production
+    steps:
+      - name: Checkout deployment configuration files
+        uses: actions/checkout@v4.2.2
+
+      - name: Configure SSH Key and Agent
+        # Why: Uses SSH agent in memory; keys are never persisted unencrypted on disk
+        env:
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT || 22 }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          # Scan and store server host key to prevent MITM prompt failure
+          ssh-keyscan -p "${SERVER_PORT}" -H "${SERVER_HOST}" >> ~/.ssh/known_hosts 2>/dev/null
+          # Load deployment private key into local agent
+          eval "$(ssh-agent -s)"
+          echo "${SERVER_SSH_KEY}" | tr -d '\r' | ssh-add - > /dev/null
+
+      - name: Deploy Containers and Verify Health
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT || 22 }}
+          SERVER_DOMAIN: ${{ secrets.SERVER_DOMAIN }}
+          HTTP_PORT: ${{ secrets.HTTP_PORT || 80 }}
+          HTTPS_PORT: ${{ secrets.HTTPS_PORT || 8443 }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          MINIO_ROOT_USER: ${{ secrets.MINIO_ROOT_USER }}
+          MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_ROOT_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRATION_MS: ${{ secrets.JWT_EXPIRATION_MS || 900000 }}
+          GHCR_PAT: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+          COMMIT_SHA: ${{ github.sha }}
+          REPO_NAME: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          # Normalize repository name to lowercase for Docker registry paths
+          LOWER_REPO=$(echo "${REPO_NAME}" | tr '[:upper:]' '[:lower:]')
+          SSH_CMD="ssh -p ${SERVER_PORT} ${SERVER_USER}@${SERVER_HOST}"
+          SCP_CMD="scp -P ${SERVER_PORT}"
+
+          echo "=================================================================="
+          echo " Starting SecureFileShare CD Pipeline for commit: ${COMMIT_SHA}"
+          echo " Target Host: ${SERVER_USER}@${SERVER_HOST}:${SERVER_PORT}"
+          echo "=================================================================="
+
+          # Step 1: Ensure target directories exist on remote host
+          # Why: /opt/securefileshare is the dedicated project directory with restricted ownership
+          echo "[1/7] Ensuring target directories on remote host..."
+          ${SSH_CMD} "mkdir -p /opt/securefileshare/docker/postgres"
+
+          # Step 2: Capture currently deployed IMAGE_TAG for rollback safety
+          # Why: If the new deployment fails health checks, we revert to this exact tag
+          echo "[2/7] Detecting previous deployment tag for rollback contingency..."
+          PREV_TAG=$(${SSH_CMD} "grep -E '^IMAGE_TAG=' /opt/securefileshare/.env 2>/dev/null | cut -d '=' -f2" || echo "")
+          echo "Previous release tag: '${PREV_TAG:-<none>}'"
+
+          # Step 3: Copy compose file, Caddyfile, and database initialization SQL
+          echo "[3/7] Uploading orchestration files..."
+          ${SCP_CMD} docker-compose.prod.yml "${SERVER_USER}@${SERVER_HOST}:/opt/securefileshare/docker-compose.prod.yml"
+          ${SCP_CMD} Caddyfile "${SERVER_USER}@${SERVER_HOST}:/opt/securefileshare/Caddyfile"
+          ${SCP_CMD} docker/postgres/init-databases.sql "${SERVER_USER}@${SERVER_HOST}:/opt/securefileshare/docker/postgres/init-databases.sql"
+
+          # Step 4: Write production .env file with atomic permissions
+          # Why: File permissions are restricted immediately (chmod 600) so no other host user can read secrets
+          echo "[4/7] Generating isolated production environment configuration..."
+          ${SSH_CMD} "cat << 'EOF' > /opt/securefileshare/.env
+          # Auto-generated by GitHub Actions CD Pipeline - Do Not Edit Manually
+          SERVER_DOMAIN=${SERVER_DOMAIN}
+          HTTP_PORT=${HTTP_PORT}
+          HTTPS_PORT=${HTTPS_PORT}
+          IMAGE_REGISTRY=ghcr.io
+          IMAGE_REPO=${LOWER_REPO}
+          IMAGE_TAG=${COMMIT_SHA}
+          POSTGRES_USER=${POSTGRES_USER}
+          POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+          REDIS_PASSWORD=${REDIS_PASSWORD}
+          MINIO_ROOT_USER=${MINIO_ROOT_USER}
+          MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+          MINIO_BUCKET_NAME=sfs-encrypted-files
+          JWT_SECRET=${JWT_SECRET}
+          JWT_EXPIRATION_MS=${JWT_EXPIRATION_MS}
+          EOF
+          chmod 600 /opt/securefileshare/.env
+          "
+
+          # Step 5: Authenticate Docker to GHCR on the target server
+          # Why: Target server must have credentials to pull package images from private/scoped GHCR
+          echo "[5/7] Authenticating target server Docker daemon with GHCR..."
+          echo "${GHCR_PAT}" | ${SSH_CMD} "docker login ghcr.io -u ${ACTOR} --password-stdin"
+
+          # Step 6: Pull new ARM64 images and initiate rolling update
+          echo "[6/7] Pulling container images and executing docker compose up..."
+          ${SSH_CMD} "cd /opt/securefileshare && docker compose -f docker-compose.prod.yml pull"
+          ${SSH_CMD} "cd /opt/securefileshare && docker compose -f docker-compose.prod.yml up -d --remove-orphans"
+
+          # Step 7: Healthcheck verification loop with automatic rollback
+          # Why: Validates that all 4 Spring microservices respond 200 OK on /api/v1/health
+          echo "[7/7] Probing microservice healthchecks (timeout: 90 seconds)..."
+          HEALTH_PASSED=false
+          ATTEMPTS=18
+          SLEEP_SECONDS=5
+
+          for i in \$(seq 1 \${ATTEMPTS}); do
+            echo "Health verification poll \$i/\${ATTEMPTS}..."
+            STATUS=$(${SSH_CMD} "
+              set -e
+              # Check each container health status using docker inspect
+              for svc in sfs_prod_auth sfs_prod_file sfs_prod_share sfs_prod_audit; do
+                STATE=\$(docker inspect --format='{{json .State.Health.Status}}' \$svc 2>/dev/null || echo '\"unhealthy\"')
+                if [ \"\$STATE\" != '\"healthy\"' ]; then
+                  echo \"NOT_HEALTHY:\$svc:\$STATE\"
+                  exit 0
+                fi
+              done
+              echo 'ALL_HEALTHY'
+            ")
+
+            if [ "\${STATUS}" = "ALL_HEALTHY" ]; then
+              echo ">>> All microservices reported HEALTHY state!"
+              HEALTH_PASSED=true
+              break
+            fi
+
+            echo "Status: \${STATUS} - waiting \${SLEEP_SECONDS}s..."
+            sleep \${SLEEP_SECONDS}
+          done
+
+          # ----------------------------------------------------------------------
+          # Automatic Rollback Execution
+          # Why: If any health check times out or fails, restore previous running tag
+          # ----------------------------------------------------------------------
+          if [ "\${HEALTH_PASSED}" = "false" ]; then
+            echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+            echo " HEALTHCHECK FAILED: Microservices did not reach healthy state!"
+            echo " Initiating automatic rollback to previous release..."
+            echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+
+            # Output recent logs for debugging before rollback
+            ${SSH_CMD} "cd /opt/securefileshare && docker compose -f docker-compose.prod.yml logs --tail=40"
+
+            if [ -n "\${PREV_TAG}" ] && [ "\${PREV_TAG}" != "\${COMMIT_SHA}" ]; then
+              echo "Reverting .env IMAGE_TAG to previous tag: \${PREV_TAG}..."
+              ${SSH_CMD} "
+                sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=\${PREV_TAG}/' /opt/securefileshare/.env
+                cd /opt/securefileshare
+                docker compose -f docker-compose.prod.yml pull
+                docker compose -f docker-compose.prod.yml up -d --remove-orphans
+              "
+              echo "Rollback to \${PREV_TAG} completed."
+            else
+              echo "No previous tag available or previous tag was identical. Cannot roll back."
+            fi
+
+            echo "=================================================================="
+            echo " DEPLOYMENT STATUS: FAILED (Rollback triggered)"
+            echo "=================================================================="
+            exit 1
+          fi
+
+          echo "=================================================================="
+          echo " DEPLOYMENT STATUS: SUCCESSFUL"
+          echo " Released commit: ${COMMIT_SHA}"
+          echo " Domain: https://${SERVER_DOMAIN}"
+          echo " Services: auth (8081), file (8082), share (8083), audit (8084)"
+          echo " Reverse Proxy: Caddy (Ports 80, 443 with automated TLS)"
+          echo "=================================================================="

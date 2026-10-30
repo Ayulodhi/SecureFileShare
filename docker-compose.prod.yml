@@ -1,0 +1,359 @@
+# ==============================================================================
+# File: docker-compose.prod.yml
+# WHAT: Production multi-container orchestration for SecureFileShare on Oracle Cloud (ARM64).
+# WHY: Deploys isolated microservices, datastores, object storage, and Caddy reverse proxy
+#      with zero exposed datastore ports, strict memory limits, and zero naming collisions
+#      with existing workloads on the host VM.
+# ==============================================================================
+
+# Explicit project name to prevent container, network, and volume namespace collisions
+# Why: Isolates this stack from any other Docker Compose projects running on the same host VM
+name: securefileshare-prod
+
+services:
+  # ----------------------------------------------------------------------------
+  # Caddy Reverse Proxy (Public Gateway)
+  # WHAT: TLS termination gateway and HTTP reverse proxy.
+  # WHY: Automatic Let's Encrypt HTTPS issuance, security header injection, and internal routing.
+  # ----------------------------------------------------------------------------
+  caddy:
+    image: caddy:2.8.4-alpine
+    container_name: sfs_prod_caddy
+    restart: unless-stopped
+    ports:
+      # Public HTTP ingress (auto-redirects to HTTPS)
+      # Why: Must bind port 80 to complete ACME HTTP-01 challenges and redirect to HTTPS
+      - "${HTTP_PORT:-80}:80"
+      # Public HTTPS ingress for all client and desktop API traffic
+      # Why: Uses port 8443 on host to avoid port clash with existing Wazuh Dashboard on port 443
+      - "${HTTPS_PORT:-8443}:443"
+    environment:
+      # Domain name injected from production .env
+      SERVER_DOMAIN: ${SERVER_DOMAIN}
+    volumes:
+      # Caddy routing configuration file mounted read-only
+      # Why: Prevents container processes from altering proxy routing rules
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Persistent TLS certificates and OCSP staples
+      # Why: Prevents exhausting Let's Encrypt rate limits across container recreations
+      - caddy_data:/data
+      # Internal Caddy configuration state
+      - caddy_config:/config
+    networks:
+      - sfs_prod_public
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      file-service:
+        condition: service_healthy
+      share-service:
+        condition: service_healthy
+      audit-service:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          # Strict memory bounds preventing proxy memory leaks from impacting host VM
+          memory: 128M
+        reservations:
+          memory: 64M
+    healthcheck:
+      # Validates Caddy admin API or listening status
+      # Why: Ensures proxy is responsive before traffic routing begins
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:80 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ----------------------------------------------------------------------------
+  # PostgreSQL 16 Datastore
+  # WHAT: Primary relational database for all microservice schemas.
+  # WHY: Multi-tenant database cluster with dedicated isolated databases per service.
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:16.4-alpine
+    container_name: sfs_prod_postgres
+    restart: unless-stopped
+    # NOTICE: No published host ports (NO "ports:" block)
+    # Why: Eliminates direct database exposure to the internet; accessible strictly inside internal Docker network
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+    volumes:
+      # Named persistent volume for database tablespaces
+      - postgres_data:/var/lib/postgresql/data
+      # Initialization SQL mounted read-only to create individual service databases on first boot
+      # Why: Preserves database-per-service isolation (sfs_auth, sfs_file, sfs_share, sfs_audit)
+      - ./docker/postgres/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
+    networks:
+      - sfs_prod_internal
+    deploy:
+      resources:
+        limits:
+          # Enforces 512MB RAM cap requested for Oracle Cloud host coexistence
+          memory: 512M
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ----------------------------------------------------------------------------
+  # Redis 7 In-Memory Datastore
+  # WHAT: Cache, distributed token blacklist, and rate-limiting store.
+  # WHY: Sub-millisecond latency for IP/user rate limiting and instant token revocation.
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7.4.1-alpine
+    container_name: sfs_prod_redis
+    restart: unless-stopped
+    # NOTICE: No published host ports
+    # Why: Prevents unauthorized Redis access or command injection over the public network
+    command: >
+      sh -c 'redis-server --requirepass "${REDIS_PASSWORD}"
+             --appendonly yes --save 60 1 --maxmemory 96mb --maxmemory-policy allkeys-lru'
+    volumes:
+      - redis_data:/data
+    networks:
+      - sfs_prod_internal
+    deploy:
+      resources:
+        limits:
+          # Strict 128MB RAM limit for Redis container
+          memory: 128M
+        reservations:
+          memory: 64M
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"${REDIS_PASSWORD}\" ping | grep PONG || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  # ----------------------------------------------------------------------------
+  # MinIO S3-Compatible Object Storage
+  # WHAT: Encrypted file storage engine.
+  # WHY: Blind storage for client-side encrypted AES-256-GCM ciphertexts.
+  # ----------------------------------------------------------------------------
+  minio:
+    image: minio/minio:RELEASE.2024-10-13T13-34-11Z
+    container_name: sfs_prod_minio
+    restart: unless-stopped
+    # NOTICE: No published host ports
+    # Why: Disables public MinIO web console and API ports to protect ciphertext blobs from direct tampering
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      # Suppress update checks in production air-gapped/isolated containers
+      MINIO_UPDATE: "off"
+    volumes:
+      - minio_data:/data
+    networks:
+      - sfs_prod_internal
+    deploy:
+      resources:
+        limits:
+          # Strict 512MB RAM cap
+          memory: 512M
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ----------------------------------------------------------------------------
+  # Microservice: auth-service
+  # WHAT: User accounts, RSA-4096 / EC P-256 key registry, JWT issuance, rate limiting.
+  # ----------------------------------------------------------------------------
+  auth-service:
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_REPO:-ayu-lodhi/securefileshare}/auth-service:${IMAGE_TAG:-latest}
+    container_name: sfs_prod_auth
+    restart: unless-stopped
+    # NOTICE: No published host ports; reverse proxied strictly through Caddy
+    environment:
+      AUTH_SERVICE_PORT: 8081
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-900000}
+      # JVM flags: bounds max heap to 384MB within the 512MB cgroup limit
+      # Why: Leaves 128MB headroom for Metaspace, thread stacks, and native memory
+      JAVA_OPTS: "-XX:+UseContainerSupport -Xms128m -Xmx384m -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
+    networks:
+      - sfs_prod_internal
+      - sfs_prod_public
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/api/v1/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 35s
+
+  # ----------------------------------------------------------------------------
+  # Microservice: file-service
+  # WHAT: Ciphertext stream proxy, chunk integrity validation, encrypted metadata.
+  # ----------------------------------------------------------------------------
+  file-service:
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_REPO:-ayu-lodhi/securefileshare}/file-service:${IMAGE_TAG:-latest}
+    container_name: sfs_prod_file
+    restart: unless-stopped
+    environment:
+      FILE_SERVICE_PORT: 8082
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-sfs-encrypted-files}
+      JWT_SECRET: ${JWT_SECRET}
+      JAVA_OPTS: "-XX:+UseContainerSupport -Xms128m -Xmx384m -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
+    networks:
+      - sfs_prod_internal
+      - sfs_prod_public
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8082/api/v1/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 35s
+
+  # ----------------------------------------------------------------------------
+  # Microservice: share-service
+  # WHAT: Share link authorization, recipient key-wrapping access, revocation.
+  # ----------------------------------------------------------------------------
+  share-service:
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_REPO:-ayu-lodhi/securefileshare}/share-service:${IMAGE_TAG:-latest}
+    container_name: sfs_prod_share
+    restart: unless-stopped
+    environment:
+      SHARE_SERVICE_PORT: 8083
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JAVA_OPTS: "-XX:+UseContainerSupport -Xms128m -Xmx384m -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
+    networks:
+      - sfs_prod_internal
+      - sfs_prod_public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8083/api/v1/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 35s
+
+  # ----------------------------------------------------------------------------
+  # Microservice: audit-service
+  # WHAT: Append-only cryptographic audit logging and compliance event records.
+  # ----------------------------------------------------------------------------
+  audit-service:
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_REPO:-ayu-lodhi/securefileshare}/audit-service:${IMAGE_TAG:-latest}
+    container_name: sfs_prod_audit
+    restart: unless-stopped
+    environment:
+      AUDIT_SERVICE_PORT: 8084
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JAVA_OPTS: "-XX:+UseContainerSupport -Xms128m -Xmx384m -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
+    networks:
+      - sfs_prod_internal
+      - sfs_prod_public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8084/api/v1/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 35s
+
+# ------------------------------------------------------------------------------
+# Network Isolation Architecture (Two-Tier DMZ)
+# WHAT: Segregated internal datastore and public reverse proxy networks.
+# WHY: Implements Defense-in-Depth: internal datastores are unreachable from outside.
+# ------------------------------------------------------------------------------
+networks:
+  # Internal-only network: datastores and backend services communicate here
+  # Why: "internal: true" blocks outbound internet egress and host routing entirely
+  sfs_prod_internal:
+    name: sfs_prod_internal
+    internal: true
+
+  # DMZ network: Caddy and backend services communicate here
+  # Why: Only Caddy binds to host network interfaces (ports 80 & 443)
+  sfs_prod_public:
+    name: sfs_prod_public
+
+# ------------------------------------------------------------------------------
+# Named Persistent Storage Volumes
+# WHY: Guarantees cryptographic keys, database entries, and ciphertext blobs survive container restarts.
+# ------------------------------------------------------------------------------
+volumes:
+  postgres_data:
+    name: sfs_prod_postgres_data
+  redis_data:
+    name: sfs_prod_redis_data
+  minio_data:
+    name: sfs_prod_minio_data
+  caddy_data:
+    name: sfs_prod_caddy_data
+  caddy_config:
+    name: sfs_prod_caddy_config
