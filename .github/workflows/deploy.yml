@@ -261,10 +261,11 @@ jobs:
           echo "[5/7] Authenticating target server Docker daemon with GHCR..."
           echo "${GHCR_PAT}" | ${SSH_CMD} "docker login ghcr.io -u ${ACTOR} --password-stdin"
 
-          # Step 6: Pull new ARM64 images and initiate rolling update
+          # Step 6: Pull new ARM64 images, build local MinIO container, and initiate rolling update
           echo "[6/7] Pulling container images and executing docker compose up..."
-          ${SSH_CMD} "cd /opt/securefileshare && docker compose -f docker-compose.prod.yml pull || true"
-          ${SSH_CMD} "cd /opt/securefileshare && docker compose -f docker-compose.prod.yml up -d --build --remove-orphans"
+          ${SSH_CMD} "cd /opt/securefileshare && docker compose -f docker-compose.prod.yml pull"
+          ${SSH_CMD} "cd /opt/securefileshare && docker compose -f docker-compose.prod.yml build minio"
+          ${SSH_CMD} "cd /opt/securefileshare && docker compose -f docker-compose.prod.yml up -d --remove-orphans"
 
           # Step 7: Healthcheck verification loop with automatic rollback
           # Why: Validates that all 4 Spring microservices respond 200 OK on /api/v1/health

@@ -177,9 +177,6 @@ services:
   # WHAT: User accounts, RSA-4096 / EC P-256 key registry, JWT issuance, rate limiting.
   # ----------------------------------------------------------------------------
   auth-service:
-    build:
-      context: .
-      dockerfile: ./auth-service/Dockerfile
     image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_REPO:-ayu-lodhi/securefileshare}/auth-service:${IMAGE_TAG:-latest}
     container_name: sfs_prod_auth
     restart: unless-stopped
@@ -227,9 +224,6 @@ services:
   # WHAT: Ciphertext stream proxy, chunk integrity validation, encrypted metadata.
   # ----------------------------------------------------------------------------
   file-service:
-    build:
-      context: .
-      dockerfile: ./file-service/Dockerfile
     image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_REPO:-ayu-lodhi/securefileshare}/file-service:${IMAGE_TAG:-latest}
     container_name: sfs_prod_file
     restart: unless-stopped
@@ -274,9 +268,6 @@ services:
   # WHAT: Share link authorization, recipient key-wrapping access, revocation.
   # ----------------------------------------------------------------------------
   share-service:
-    build:
-      context: .
-      dockerfile: ./share-service/Dockerfile
     image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_REPO:-ayu-lodhi/securefileshare}/share-service:${IMAGE_TAG:-latest}
     container_name: sfs_prod_share
     restart: unless-stopped
@@ -312,9 +303,6 @@ services:
   # WHAT: Append-only cryptographic audit logging and compliance event records.
   # ----------------------------------------------------------------------------
   audit-service:
-    build:
-      context: .
-      dockerfile: ./audit-service/Dockerfile
     image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_REPO:-ayu-lodhi/securefileshare}/audit-service:${IMAGE_TAG:-latest}
     container_name: sfs_prod_audit
     restart: unless-stopped
