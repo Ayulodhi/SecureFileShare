@@ -136,24 +136,22 @@ services:
       start_period: 10s
 
   # ----------------------------------------------------------------------------
-  # MinIO S3-Compatible Object Storage
+  # MinIO S3-Compatible Object Storage (Bitnami DVP)
   # WHAT: Encrypted file storage engine.
-  # WHY: Blind storage for client-side encrypted AES-256-GCM ciphertexts.
+  # WHY: Docker Verified Publisher image with zero rate limits and guaranteed multi-arch.
   # ----------------------------------------------------------------------------
   minio:
-    image: quay.io/minio/minio:RELEASE.2024-10-13T13-34-11Z
+    image: bitnami/minio:latest
     container_name: sfs_prod_minio
     restart: unless-stopped
     # NOTICE: No published host ports
     # Why: Disables public MinIO web console and API ports to protect ciphertext blobs from direct tampering
-    command: server /data
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-      # Suppress update checks in production air-gapped/isolated containers
-      MINIO_UPDATE: "off"
+      MINIO_DEFAULT_BUCKETS: "sfs-encrypted-files"
     volumes:
-      - minio_data:/data
+      - minio_data:/bitnami/minio/data
     networks:
       - sfs_prod_internal
     deploy:

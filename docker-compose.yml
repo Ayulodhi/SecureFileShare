@@ -37,20 +37,21 @@ services:
       retries: 5
 
   # ----------------------------------------------------------------------------
-  # MinIO S3-Compatible Object Storage Service
+  # MinIO S3-Compatible Object Storage Service (Bitnami DVP)
   # WHAT: High-performance object storage server.
-  # WHY: Stores raw AES-256-GCM ciphertexts blindly without exposing plaintext to disk.
+  # WHY: Docker Verified Publisher image with zero rate limits and no auth required.
   # ----------------------------------------------------------------------------
   minio:
-    image: quay.io/minio/minio:RELEASE.2024-10-13T13-34-11Z
+    image: bitnami/minio:latest
     container_name: sfs_minio
     restart: unless-stopped
-    command: server /data --console-address ":9001"
     environment:
       # MinIO root admin username (access key)
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio_admin}
       # MinIO root admin password (secret key)
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio_secret_pass_2026}
+      # Pre-creates required buckets automatically upon startup
+      MINIO_DEFAULT_BUCKETS: "secure-files,sfs-encrypted-files"
     ports:
       # S3 API port used by file-service SDK calls
       - "${MINIO_API_PORT:-9000}:9000"
@@ -58,9 +59,9 @@ services:
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
       # Named persistent volume to retain ciphertext objects
-      - minio_data:/data
+      - minio_data:/bitnami/minio/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
