@@ -20,12 +20,19 @@
     }
 }
 
-# Ingress site block parameterized by environment variable SERVER_DOMAIN
-# Why: Supports direct IP access without requiring a public registered domain or failing ACME challenges
-http://{$SERVER_DOMAIN:localhost}, https://{$SERVER_DOMAIN:localhost} {
+:80 {
+    handle /health {
+        respond "OK" 200
+    }
+    handle {
+        redir https://{host}:8443{uri} permanent
+    }
+}
 
-    # Automatically generate self-signed TLS certificates for IP addresses / internal domains
-    # Why: Let's Encrypt does not issue certificates for raw IP addresses; internal TLS avoids ACME failures
+:443 {
+
+    # Automatically generate self-signed TLS certificates for any incoming host or IP address
+    # Why: Eliminates SNI host mismatch errors across direct IP, localhost, and custom port mappings
     tls internal
 
     # --------------------------------------------------------------------------

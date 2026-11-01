@@ -14,9 +14,13 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 /**
  * Real HTTP client implementation communicating with the Spring Boot audit-service.
@@ -40,8 +44,26 @@ public class RealAuditApi implements AuditApi {
         this.appConfig = appConfig;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
+                .sslContext(createInsecureSslContext())
                 .build();
         this.objectMapper = new ObjectMapper();
+    }
+
+    private static SSLContext createInsecureSslContext() {
+        try {
+            TrustManager[] trustAllCerts = new TrustManager[]{
+                new X509TrustManager() {
+                    public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
+                    public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+                    public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+                }
+            };
+            SSLContext sc = SSLContext.getInstance("TLS");
+            sc.init(null, trustAllCerts, new java.security.SecureRandom());
+            return sc;
+        } catch (Exception ex) {
+            throw new RuntimeException("Failed to initialize SSLContext", ex);
+        }
     }
 
     @Override
