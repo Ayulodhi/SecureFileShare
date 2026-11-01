@@ -175,6 +175,9 @@ services:
   # WHAT: User accounts, RSA-4096 / EC P-256 key registry, JWT issuance, rate limiting.
   # ----------------------------------------------------------------------------
   auth-service:
+    build:
+      context: .
+      dockerfile: ./auth-service/Dockerfile
     image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_REPO:-ayu-lodhi/securefileshare}/auth-service:${IMAGE_TAG:-latest}
     container_name: sfs_prod_auth
     restart: unless-stopped
@@ -190,6 +193,9 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-900000}
+      ADMIN_INITIAL_USERNAME: ${ADMIN_INITIAL_USERNAME:-admin}
+      ADMIN_INITIAL_EMAIL: ${ADMIN_INITIAL_EMAIL:-admin@securefileshare.local}
+      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-AdminSecurePass2026!}
       # JVM flags: bounds max heap to 384MB within the 512MB cgroup limit
       # Why: Leaves 128MB headroom for Metaspace, thread stacks, and native memory
       JAVA_OPTS: "-XX:+UseContainerSupport -Xms128m -Xmx384m -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
@@ -219,6 +225,9 @@ services:
   # WHAT: Ciphertext stream proxy, chunk integrity validation, encrypted metadata.
   # ----------------------------------------------------------------------------
   file-service:
+    build:
+      context: .
+      dockerfile: ./file-service/Dockerfile
     image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_REPO:-ayu-lodhi/securefileshare}/file-service:${IMAGE_TAG:-latest}
     container_name: sfs_prod_file
     restart: unless-stopped
@@ -229,9 +238,12 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-sfs-encrypted-files}
+      AUTH_SERVICE_URL: http://auth-service:8081
       JWT_SECRET: ${JWT_SECRET}
       JAVA_OPTS: "-XX:+UseContainerSupport -Xms128m -Xmx384m -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
     networks:
@@ -260,6 +272,9 @@ services:
   # WHAT: Share link authorization, recipient key-wrapping access, revocation.
   # ----------------------------------------------------------------------------
   share-service:
+    build:
+      context: .
+      dockerfile: ./share-service/Dockerfile
     image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_REPO:-ayu-lodhi/securefileshare}/share-service:${IMAGE_TAG:-latest}
     container_name: sfs_prod_share
     restart: unless-stopped
@@ -295,6 +310,9 @@ services:
   # WHAT: Append-only cryptographic audit logging and compliance event records.
   # ----------------------------------------------------------------------------
   audit-service:
+    build:
+      context: .
+      dockerfile: ./audit-service/Dockerfile
     image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_REPO:-ayu-lodhi/securefileshare}/audit-service:${IMAGE_TAG:-latest}
     container_name: sfs_prod_audit
     restart: unless-stopped
