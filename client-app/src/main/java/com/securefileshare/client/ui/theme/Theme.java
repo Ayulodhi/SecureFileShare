@@ -38,11 +38,13 @@ public final class Theme {
     // --- Typography (Segoe UI with System Default Fallback) ---
     public static final String FONT_FAMILY = "Segoe UI";
     public static final Font FONT_TITLE = new Font(FONT_FAMILY, Font.BOLD, 24);
+    public static final Font FONT_SECTION_HEADER = new Font(FONT_FAMILY, Font.BOLD, 16);
     public static final Font FONT_SUBTITLE = new Font(FONT_FAMILY, Font.PLAIN, 14);
     public static final Font FONT_BODY = new Font(FONT_FAMILY, Font.PLAIN, 14);
     public static final Font FONT_BODY_BOLD = new Font(FONT_FAMILY, Font.BOLD, 14);
     public static final Font FONT_LABEL = new Font(FONT_FAMILY, Font.BOLD, 12);
     public static final Font FONT_SMALL = new Font(FONT_FAMILY, Font.PLAIN, 12);
+    public static final Font FONT_MONO = new Font(Font.MONOSPACED, Font.PLAIN, 13);
 
     // --- Standard Spacing & Sizing Tokens ---
     public static final int BUTTON_MIN_HEIGHT = 44; // Rule: Buttons at least 44px tall
@@ -72,5 +74,13 @@ public final class Theme {
         } catch (Exception ex) {
             System.err.println("Warning: FlatLaf setup encountered an issue: " + ex.getMessage());
         }
+    }
+
+    public static JTextField createTextField(int columns) {
+        JTextField field = new JTextField(columns);
+        field.setFont(FONT_BODY);
+        field.setForeground(COLOR_INK_NAVY);
+        field.setBackground(COLOR_CARD_WHITE);
+        return field;
     }
 }
