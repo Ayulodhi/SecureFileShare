@@ -141,7 +141,7 @@ services:
   # WHY: Blind storage for client-side encrypted AES-256-GCM ciphertexts.
   # ----------------------------------------------------------------------------
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     container_name: sfs_prod_minio
     restart: unless-stopped
     # NOTICE: No published host ports
