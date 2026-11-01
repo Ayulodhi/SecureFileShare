@@ -5,8 +5,6 @@
 #      containers matching production infrastructure requirements for local testing.
 # ==============================================================================
 
-version: '3.8'
-
 services:
   # ----------------------------------------------------------------------------
   # PostgreSQL 16 Database Service
@@ -44,7 +42,7 @@ services:
   # WHY: Stores raw AES-256-GCM ciphertexts blindly without exposing plaintext to disk.
   # ----------------------------------------------------------------------------
   minio:
-    image: minio/minio:RELEASE.2024-10-13T13-34-11Z
+    image: minio/minio:latest
     container_name: sfs_minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
