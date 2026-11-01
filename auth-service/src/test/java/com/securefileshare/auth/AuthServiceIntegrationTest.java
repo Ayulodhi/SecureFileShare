@@ -127,12 +127,12 @@ public class AuthServiceIntegrationTest {
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.token").isNotEmpty())
+                .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
                 .andExpect(jsonPath("$.data.userId").value(registeredUserId.toString()))
                 .andReturn();
 
         JsonNode loginNode = objectMapper.readTree(loginResult.getResponse().getContentAsString());
-        String jwtToken = loginNode.path("data").path("token").asText();
+        String jwtToken = loginNode.path("data").path("accessToken").asText();
 
         // 3. Generate valid RSA-4096 and EC P-256 public keys
         KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("RSA");
@@ -182,13 +182,13 @@ public class AuthServiceIntegrationTest {
         String email1 = "dup1_" + uniqueSuffix + "@example.com";
         String email2 = "dup2_" + uniqueSuffix + "@example.com";
 
-        RegisterRequest first = new RegisterRequest(username, email1, "Pass1234!", Role.SENDER_RECIPIENT);
+        RegisterRequest first = new RegisterRequest(username, email1, "Password1234!", Role.SENDER_RECIPIENT);
         mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(first)))
                 .andExpect(status().isCreated());
 
-        RegisterRequest second = new RegisterRequest(username, email2, "Pass1234!", Role.SENDER_RECIPIENT);
+        RegisterRequest second = new RegisterRequest(username, email2, "Password1234!", Role.SENDER_RECIPIENT);
         mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(second)))
@@ -236,7 +236,7 @@ public class AuthServiceIntegrationTest {
                 .andReturn();
 
         String jwtToken = objectMapper.readTree(loginResult.getResponse().getContentAsString())
-                .path("data").path("token").asText();
+                .path("data").path("accessToken").asText();
 
         // Generate weak 2048-bit RSA key
         KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("RSA");
