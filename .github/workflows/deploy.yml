@@ -162,7 +162,7 @@ jobs:
         uses: actions/checkout@v4.2.2
 
       - name: Configure SSH Key and Agent
-        # Why: Uses SSH agent in memory; keys are never persisted unencrypted on disk
+        # Why: Staged with strict 600 permissions and trailing newline to prevent libcrypto parsing failures
         env:
           SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
           SERVER_HOST: ${{ secrets.SERVER_HOST || '140.238.240.128' }}
@@ -170,11 +170,11 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          # Scan and store server host key to prevent MITM prompt failure
           ssh-keyscan -p "${SERVER_PORT}" -H "${SERVER_HOST}" >> ~/.ssh/known_hosts 2>/dev/null
-          # Load deployment private key into local agent
-          eval "$(ssh-agent -s)"
-          echo "${SERVER_SSH_KEY}" | tr -d '\r' | ssh-add - > /dev/null
+          # Write private key with clean line endings and guaranteed trailing newline
+          echo "${SERVER_SSH_KEY}" | tr -d '\r' > ~/.ssh/deploy_key
+          echo "" >> ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
 
       - name: Deploy Containers and Verify Health
         env:
@@ -203,8 +203,8 @@ jobs:
 
           # Normalize repository name to lowercase for Docker registry paths
           LOWER_REPO=$(echo "${REPO_NAME}" | tr '[:upper:]' '[:lower:]')
-          SSH_CMD="ssh -p ${SERVER_PORT} ${SERVER_USER}@${SERVER_HOST}"
-          SCP_CMD="scp -P ${SERVER_PORT}"
+          SSH_CMD="ssh -i ~/.ssh/deploy_key -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new ${SERVER_USER}@${SERVER_HOST}"
+          SCP_CMD="scp -i ~/.ssh/deploy_key -P ${SERVER_PORT} -o StrictHostKeyChecking=accept-new"
 
           echo "=================================================================="
           echo " Starting SecureFileShare CD Pipeline for commit: ${COMMIT_SHA}"
