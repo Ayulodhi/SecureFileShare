@@ -214,7 +214,7 @@ jobs:
           # Step 1: Ensure target directories exist on remote host with correct ownership
           # Why: /opt is root-owned on Ubuntu; sudo ensures directory exists and is owned by SERVER_USER
           echo "[1/7] Ensuring target directories on remote host..."
-          ${SSH_CMD} "sudo mkdir -p /opt/securefileshare/docker/postgres && sudo chown -R ${SERVER_USER}:${SERVER_USER} /opt/securefileshare"
+          ${SSH_CMD} "sudo mkdir -p /opt/securefileshare/docker/postgres /opt/securefileshare/docker/minio && sudo chown -R ${SERVER_USER}:${SERVER_USER} /opt/securefileshare"
 
           # Step 2: Capture currently deployed IMAGE_TAG for rollback safety
           # Why: If the new deployment fails health checks, we revert to this exact tag
@@ -227,6 +227,7 @@ jobs:
           ${SCP_CMD} docker-compose.prod.yml "${SERVER_USER}@${SERVER_HOST}:/opt/securefileshare/docker-compose.prod.yml"
           ${SCP_CMD} Caddyfile "${SERVER_USER}@${SERVER_HOST}:/opt/securefileshare/Caddyfile"
           ${SCP_CMD} docker/postgres/init-databases.sql "${SERVER_USER}@${SERVER_HOST}:/opt/securefileshare/docker/postgres/init-databases.sql"
+          ${SCP_CMD} docker/minio/Dockerfile "${SERVER_USER}@${SERVER_HOST}:/opt/securefileshare/docker/minio/Dockerfile"
 
           # Step 4: Write production .env file with atomic permissions
           # Why: Staged locally on runner and copied via SCP to avoid heredoc delimiter indentation corruption
@@ -262,8 +263,8 @@ EOF
 
           # Step 6: Pull new ARM64 images and initiate rolling update
           echo "[6/7] Pulling container images and executing docker compose up..."
-          ${SSH_CMD} "cd /opt/securefileshare && docker compose -f docker-compose.prod.yml pull"
-          ${SSH_CMD} "cd /opt/securefileshare && docker compose -f docker-compose.prod.yml up -d --remove-orphans"
+          ${SSH_CMD} "cd /opt/securefileshare && docker compose -f docker-compose.prod.yml pull || true"
+          ${SSH_CMD} "cd /opt/securefileshare && docker compose -f docker-compose.prod.yml up -d --build --remove-orphans"
 
           # Step 7: Healthcheck verification loop with automatic rollback
           # Why: Validates that all 4 Spring microservices respond 200 OK on /api/v1/health
