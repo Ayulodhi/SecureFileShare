@@ -31,7 +31,7 @@ RUN mvn dependency:go-offline -B -pl share-service -am --no-transfer-progress ||
 
 # Copy source code for common dependency and share-service
 COPY common/src ./common/src
-COPY share-service/src ./share-service/
+COPY share-service/src ./share-service/src
 
 # Package share-service fat JAR while skipping unit tests (tests are enforced during CI pipeline)
 # Why: Prevents redundant test execution during image compilation while packaging required dependencies

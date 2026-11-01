@@ -31,7 +31,7 @@ RUN mvn dependency:go-offline -B -pl audit-service -am --no-transfer-progress ||
 
 # Copy source code for common dependency and audit-service
 COPY common/src ./common/src
-COPY audit-service/src ./audit-service/
+COPY audit-service/src ./audit-service/src
 
 # Package audit-service fat JAR while skipping unit tests (tests are enforced during CI pipeline)
 # Why: Prevents redundant test execution during image compilation while packaging required dependencies

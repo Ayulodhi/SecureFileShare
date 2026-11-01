@@ -31,7 +31,7 @@ RUN mvn dependency:go-offline -B -pl file-service -am --no-transfer-progress || 
 
 # Copy source code for common dependency and file-service
 COPY common/src ./common/src
-COPY file-service/src ./file-service/
+COPY file-service/src ./file-service/src
 
 # Package file-service fat JAR while skipping unit tests (tests are enforced during CI pipeline)
 # Why: Prevents redundant test execution during image compilation while packaging required dependencies

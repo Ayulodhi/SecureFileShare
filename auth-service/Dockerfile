@@ -31,7 +31,7 @@ RUN mvn dependency:go-offline -B -pl auth-service -am --no-transfer-progress || 
 
 # Copy source code for common dependency and auth-service
 COPY common/src ./common/src
-COPY auth-service/src ./auth-service/
+COPY auth-service/src ./auth-service/src
 
 # Package auth-service fat JAR while skipping unit tests (tests are enforced during CI pipeline)
 # Why: Prevents redundant test execution during image compilation while packaging required dependencies
