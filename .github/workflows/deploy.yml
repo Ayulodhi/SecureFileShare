@@ -171,30 +171,9 @@ jobs:
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           ssh-keyscan -p "${SERVER_PORT}" -H "${SERVER_HOST}" >> ~/.ssh/known_hosts 2>/dev/null
-          python3 -c "
-          import os, sys
-
-          raw = os.environ.get('SERVER_SSH_KEY', '').strip()
-          if not raw:
-              print('ERROR: SERVER_SSH_KEY secret is not set or empty!', file=sys.stderr)
-              sys.exit(1)
-
-          raw = raw.replace('\\r', '').replace('\\n', '\n')
-          lines = [l.strip() for l in raw.splitlines() if l.strip()]
-
-          if len(lines) == 1:
-              s = lines[0]
-              for d in ['-----BEGIN OPENSSH PRIVATE KEY-----', '-----END OPENSSH PRIVATE KEY-----', '-----BEGIN RSA PRIVATE KEY-----', '-----END RSA PRIVATE KEY-----', '-----BEGIN PRIVATE KEY-----', '-----END PRIVATE KEY-----']:
-                  s = s.replace(d, '\n' + d + '\n')
-              lines = [l.strip() for l in s.splitlines() if l.strip()]
-
-          out = '\n'.join(lines) + '\n'
-          key_path = os.path.expanduser('~/.ssh/deploy_key')
-          with open(key_path, 'w') as f:
-              f.write(out)
-          "
+          # Write private key with guaranteed trailing newline
+          printf '%s\n' "${SERVER_SSH_KEY}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          echo "Verifying SSH deployment key format..."
           ssh-keygen -l -f ~/.ssh/deploy_key
 
       - name: Deploy Containers and Verify Health
