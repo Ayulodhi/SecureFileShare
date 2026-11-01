@@ -165,7 +165,7 @@ jobs:
         # Why: Uses SSH agent in memory; keys are never persisted unencrypted on disk
         env:
           SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST || '140.238.240.128' }}
           SERVER_PORT: ${{ secrets.SERVER_PORT || 22 }}
         run: |
           mkdir -p ~/.ssh
@@ -178,10 +178,10 @@ jobs:
 
       - name: Deploy Containers and Verify Health
         env:
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST || '140.238.240.128' }}
+          SERVER_USER: ${{ secrets.SERVER_USER || 'ubuntu' }}
           SERVER_PORT: ${{ secrets.SERVER_PORT || 22 }}
-          SERVER_DOMAIN: ${{ secrets.SERVER_DOMAIN }}
+          SERVER_DOMAIN: ${{ secrets.SERVER_DOMAIN || '140.238.240.128' }}
           HTTP_PORT: ${{ secrets.HTTP_PORT || 80 }}
           HTTPS_PORT: ${{ secrets.HTTPS_PORT || 8443 }}
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}

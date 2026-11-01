@@ -21,8 +21,12 @@
 }
 
 # Ingress site block parameterized by environment variable SERVER_DOMAIN
-# Why: Allows domain change via .env (e.g. sfs.example.com) without altering Caddyfile
-{$SERVER_DOMAIN:localhost} {
+# Why: Supports direct IP access without requiring a public registered domain or failing ACME challenges
+http://{$SERVER_DOMAIN:localhost}, https://{$SERVER_DOMAIN:localhost} {
+
+    # Automatically generate self-signed TLS certificates for IP addresses / internal domains
+    # Why: Let's Encrypt does not issue certificates for raw IP addresses; internal TLS avoids ACME failures
+    tls internal
 
     # --------------------------------------------------------------------------
     # Hardened Security Response Headers
