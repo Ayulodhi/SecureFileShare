@@ -217,7 +217,9 @@ public class SidebarPanel extends JPanel {
             this.screenName = screenName;
             setLayout(new BorderLayout());
             setOpaque(false);
-            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            if (!GraphicsEnvironment.isHeadless()) {
+                setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            }
             setBorder(new EmptyBorder(10, 14, 10, 14));
             setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
 

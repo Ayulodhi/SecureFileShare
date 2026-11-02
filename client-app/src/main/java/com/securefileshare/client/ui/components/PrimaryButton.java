@@ -25,7 +25,9 @@ public class PrimaryButton extends JButton {
         setContentAreaFilled(false);
         setBorderPainted(false);
         setFocusPainted(false);
-        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        if (!GraphicsEnvironment.isHeadless()) {
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        }
         setBorder(new EmptyBorder(10, 20, 10, 20));
     }
 
