@@ -23,3 +23,12 @@ target/
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# Node.js and web frontend
+node_modules/
+web-app/node_modules/
+web-app/dist/
+
+# Agent & workflow scratch
+.superpowers/
+

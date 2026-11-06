@@ -35,6 +35,9 @@
     # Why: Eliminates SNI host mismatch errors across direct IP, localhost, and custom port mappings
     tls internal
 
+    # Mount static assets for web frontend SPA
+    root * /var/www/html
+
     # --------------------------------------------------------------------------
     # Hardened Security Response Headers
     # WHAT: Injects defensive browser security headers on all proxied responses.
@@ -57,9 +60,9 @@
         # Why: Prevents leaking sensitive URL query parameters or share tokens to third parties
         Referrer-Policy "strict-origin-when-cross-origin"
 
-        # Strict Content Security Policy preventing unauthorized script and resource execution
-        # Why: Restricts execution environment since backend is an API gateway (no HTML rendering)
-        Content-Security-Policy "default-src 'none'; frame-ancestors 'none'; base-uri 'none';"
+        # Content Security Policy enabling zero-knowledge Web Crypto SPA rendering
+        # Why: Restricts execution to local assets and trusted web font endpoints
+        Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data: blob:; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'none';"
 
         # Disables browser hardware access APIs
         # Why: Prevents any potential script from accessing microphone, camera, or sensors
@@ -135,9 +138,10 @@
         }
     }
 
-    # Fallback rule: Reject unmatched routes with 404
-    # Why: Default-deny routing avoids unintentional proxying or path traversal exposure
+    # SPA Client Routing: serve static asset if file exists, else fallback to index.html
+    # Why: Enables client-side history navigation while serving zero-knowledge frontend bundle
     handle {
-        respond "Not Found" 404
+        try_files {path} /index.html
+        file_server
     }
 }

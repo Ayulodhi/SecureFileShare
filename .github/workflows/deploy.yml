@@ -161,6 +161,18 @@ jobs:
       - name: Checkout deployment configuration files
         uses: actions/checkout@v4.2.2
 
+      - name: Set up Node.js for Web Client Build
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build & Verify Web Application SPA
+        run: |
+          npm --prefix web-app install
+          npm --prefix web-app run test
+          npm --prefix web-app run test:integration
+          npm --prefix web-app run build
+
       - name: Configure SSH Key and Agent
         # Why: Staged with strict 600 permissions and trailing newline to prevent libcrypto parsing failures
         env:
@@ -214,7 +226,7 @@ jobs:
           # Step 1: Ensure target directories exist on remote host with correct ownership
           # Why: /opt is root-owned on Ubuntu; sudo ensures directory exists and is owned by SERVER_USER
           echo "[1/7] Ensuring target directories on remote host..."
-          ${SSH_CMD} "sudo mkdir -p /opt/securefileshare/docker/postgres /opt/securefileshare/docker/minio && sudo chown -R ${SERVER_USER}:${SERVER_USER} /opt/securefileshare"
+          ${SSH_CMD} "sudo mkdir -p /opt/securefileshare/docker/postgres /opt/securefileshare/docker/minio /opt/securefileshare/web-app/dist && sudo chown -R ${SERVER_USER}:${SERVER_USER} /opt/securefileshare"
 
           # Step 2: Capture currently deployed IMAGE_TAG for rollback safety
           # Why: If the new deployment fails health checks, we revert to this exact tag
@@ -222,12 +234,13 @@ jobs:
           PREV_TAG=$(${SSH_CMD} "grep -E '^IMAGE_TAG=' /opt/securefileshare/.env 2>/dev/null | cut -d '=' -f2" || echo "")
           echo "Previous release tag: '${PREV_TAG:-<none>}'"
 
-          # Step 3: Copy compose file, Caddyfile, and database initialization SQL
-          echo "[3/7] Uploading orchestration files..."
+          # Step 3: Copy compose file, Caddyfile, static web assets, and database initialization SQL
+          echo "[3/7] Uploading orchestration files and static web bundle..."
           ${SCP_CMD} docker-compose.prod.yml "${SERVER_USER}@${SERVER_HOST}:/opt/securefileshare/docker-compose.prod.yml"
           ${SCP_CMD} Caddyfile "${SERVER_USER}@${SERVER_HOST}:/opt/securefileshare/Caddyfile"
           ${SCP_CMD} docker/postgres/init-databases.sql "${SERVER_USER}@${SERVER_HOST}:/opt/securefileshare/docker/postgres/init-databases.sql"
           ${SCP_CMD} docker/minio/Dockerfile "${SERVER_USER}@${SERVER_HOST}:/opt/securefileshare/docker/minio/Dockerfile"
+          ${SCP_CMD} -r web-app/dist/* "${SERVER_USER}@${SERVER_HOST}:/opt/securefileshare/web-app/dist/"
 
           # Step 4: Write production .env file with atomic permissions
           # Why: Staged locally on runner and copied via SCP to avoid heredoc delimiter indentation corruption

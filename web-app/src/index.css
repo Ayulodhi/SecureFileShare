@@ -1,0 +1,216 @@
+/* ==============================================================================
+   Swiss International Typographic Design System - SecureFileShare
+   Anchor: Swiss (High-contrast graphite/white, International Orange #FF4F00 accent,
+           1px precision hairline grid rules, tabular metrics, left-aligned hierarchy)
+   ============================================================================== */
+
+:root {
+  /* Surfaces */
+  --bg-primary: #090a0c;
+  --bg-secondary: #0f1013;
+  --bg-surface: #14161a;
+  --bg-surface-hover: #1c1e24;
+  --bg-input: #0d0e11;
+
+  /* Structure & Hairline Grids */
+  --hairline: #22252c;
+  --hairline-strong: #323640;
+  --hairline-focus: #ff4f00;
+
+  /* Typography */
+  --text-primary: #ffffff;
+  --text-secondary: #a3a8b4;
+  --text-muted: #5e6473;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, Menlo, monospace;
+
+  /* Deliberate Accent: International Orange */
+  --accent-primary: #ff4f00;
+  --accent-primary-hover: #e54700;
+  --accent-primary-active: #cc3f00;
+  --accent-tint: rgba(255, 79, 0, 0.1);
+  --accent-tint-strong: rgba(255, 79, 0, 0.2);
+
+  /* Semantic Status Signals */
+  --status-clean: #00d66f;
+  --status-clean-bg: rgba(0, 214, 111, 0.08);
+  --status-clean-border: rgba(0, 214, 111, 0.25);
+
+  --status-warn: #ffb800;
+  --status-warn-bg: rgba(255, 184, 0, 0.08);
+  --status-warn-border: rgba(255, 184, 0, 0.25);
+
+  --status-danger: #ff3344;
+  --status-danger-bg: rgba(255, 51, 68, 0.08);
+  --status-danger-border: rgba(255, 51, 68, 0.25);
+
+  /* Geometry & Rules */
+  --radius-sharp: 2px;
+  --border-hairline: 1px solid var(--hairline);
+  --border-hairline-strong: 1px solid var(--hairline-strong);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Swiss Hairline Card Surfaces */
+.card {
+  background: var(--bg-surface);
+  border: var(--border-hairline);
+  border-radius: var(--radius-sharp);
+  padding: 1.75rem;
+  box-shadow: none;
+  transition: border-color 0.15s ease;
+}
+
+.card:hover {
+  border-color: var(--hairline-strong);
+}
+
+/* High-Precision Form Inputs */
+.form-input {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  background: var(--bg-input);
+  border: var(--border-hairline);
+  border-radius: var(--radius-sharp);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-family: var(--font-sans);
+  transition: border-color 0.15s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.form-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Swiss Architectural Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.7rem 1.25rem;
+  border-radius: var(--radius-sharp);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-primary {
+  background: var(--accent-primary);
+  color: #ffffff;
+  border-color: var(--accent-primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-primary-hover);
+  border-color: var(--accent-primary-hover);
+}
+
+.btn-primary:active:not(:disabled) {
+  background: var(--accent-primary-active);
+}
+
+.btn-secondary {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: var(--border-hairline);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--bg-surface-hover);
+  border-color: var(--hairline-strong);
+}
+
+.btn-danger {
+  background: var(--status-danger-bg);
+  color: var(--status-danger);
+  border: 1px solid var(--status-danger-border);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--status-danger);
+  color: #ffffff;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Badges & Status Markers */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-sharp);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid transparent;
+}
+
+.badge-success {
+  background: var(--status-clean-bg);
+  color: var(--status-clean);
+  border-color: var(--status-clean-border);
+}
+
+.badge-warning {
+  background: var(--status-warn-bg);
+  color: var(--status-warn);
+  border-color: var(--status-warn-border);
+}
+
+.badge-danger {
+  background: var(--status-danger-bg);
+  color: var(--status-danger);
+  border-color: var(--status-danger-border);
+}
+
+.badge-neutral {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: var(--border-hairline);
+}
+
+/* Typography Utilities */
+.font-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.subheading-swiss {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}

@@ -34,6 +34,9 @@ services:
       # Caddy routing configuration file mounted read-only
       # Why: Prevents container processes from altering proxy routing rules
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Static production assets for zero-knowledge web frontend Single-Page Application
+      # Why: Serves UI directly via Caddy file_server without adding another container or RAM footprint
+      - ./web-app/dist:/var/www/html:ro
       # Persistent TLS certificates and OCSP staples
       # Why: Prevents exhausting Let's Encrypt rate limits across container recreations
       - caddy_data:/data

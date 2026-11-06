@@ -1,0 +1,26 @@
+{
+  "name": "web-app",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "tsx --test src/crypto/webCryptoService.test.ts",
+    "test:integration": "tsx --test src/api/apiIntegration.test.ts"
+  },
+  "dependencies": {
+    "lucide-react": "^0.460.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "typescript": "^5.6.3",
+    "tsx": "^4.19.2",
+    "vite": "^5.4.10"
+  }
+}
