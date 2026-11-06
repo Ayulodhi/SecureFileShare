@@ -274,17 +274,33 @@ jobs:
           echo "[5/7] Authenticating target server Docker daemon with GHCR..."
           echo "${GHCR_PAT}" | ${SSH_CMD} "docker login ghcr.io -u ${ACTOR} --password-stdin"
 
-          # Step 6: Pull new ARM64 images, build local MinIO container, and initiate rolling update
+          # Step 6: Pull new ARM64 images, build local MinIO container, ensure databases, and initiate update
           echo "[6/7] Pulling container images and executing docker compose up..."
           ${SSH_CMD} "cd /opt/securefileshare && docker compose -f docker-compose.prod.yml pull"
           ${SSH_CMD} "cd /opt/securefileshare && docker compose -f docker-compose.prod.yml build minio"
+          ${SSH_CMD} "cd /opt/securefileshare && docker compose -f docker-compose.prod.yml up -d postgres"
+          ${SSH_CMD} "
+            cd /opt/securefileshare
+            PG_USER=\$(grep -E '^POSTGRES_USER=' .env 2>/dev/null | cut -d '=' -f2)
+            PG_USER=\${PG_USER:-sfs_admin}
+            echo \"Ensuring PostgreSQL databases exist for user \${PG_USER}...\"
+            for i in \$(seq 1 30); do
+              if docker compose -f docker-compose.prod.yml exec -T postgres pg_isready -U \"\${PG_USER}\" -d postgres >/dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+            for db in sfs_auth sfs_file sfs_share sfs_audit; do
+              docker compose -f docker-compose.prod.yml exec -T postgres psql -U \"\${PG_USER}\" -d postgres -c \"CREATE DATABASE \$db;\" 2>/dev/null || true
+            done
+          "
           ${SSH_CMD} "cd /opt/securefileshare && docker compose -f docker-compose.prod.yml up -d --remove-orphans"
 
           # Step 7: Healthcheck verification loop with automatic rollback
           # Why: Validates that all 4 Spring microservices respond 200 OK on /api/v1/health
-          echo "[7/7] Probing microservice healthchecks (timeout: 90 seconds)..."
+          echo "[7/7] Probing microservice healthchecks (timeout: 140 seconds)..."
           HEALTH_PASSED=false
-          ATTEMPTS=18
+          ATTEMPTS=28
           SLEEP_SECONDS=5
 
           for i in $(seq 1 ${ATTEMPTS}); do
