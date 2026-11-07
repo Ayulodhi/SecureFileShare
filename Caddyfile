@@ -11,6 +11,7 @@
     # Why: Eliminates server banner leakage during automated vulnerability scanning
     servers {
         trusted_proxies static private_ranges
+        default_sni {$SERVER_DOMAIN:140.238.240.128}
     }
     # Log access events in structured JSON format to stdout for log aggregators
     log {
