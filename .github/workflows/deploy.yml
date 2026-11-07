@@ -295,7 +295,7 @@ jobs:
             done
           "
           ${SSH_CMD} "cd /opt/securefileshare && docker compose -f docker-compose.prod.yml up -d --remove-orphans"
-          ${SSH_CMD} "cd /opt/securefileshare && docker compose -f docker-compose.prod.yml exec -T caddy caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || docker compose -f docker-compose.prod.yml restart caddy"
+          ${SSH_CMD} "cd /opt/securefileshare && docker compose -f docker-compose.prod.yml exec -T caddy caddy validate --config /etc/caddy/Caddyfile && docker compose -f docker-compose.prod.yml restart caddy"
 
           # Step 7: Healthcheck verification loop with automatic rollback
           # Why: Validates that all 4 Spring microservices respond 200 OK on /api/v1/health
@@ -309,7 +309,7 @@ jobs:
             STATUS=$(${SSH_CMD} "
               set -e
               # Check each container health status using docker inspect
-              for svc in sfs_prod_auth sfs_prod_file sfs_prod_share sfs_prod_audit; do
+              for svc in sfs_prod_auth sfs_prod_file sfs_prod_share sfs_prod_audit sfs_prod_caddy; do
                 STATE=\$(docker inspect --format='{{json .State.Health.Status}}' \$svc 2>/dev/null || echo '\"unhealthy\"')
                 if [ \"\$STATE\" != '\"healthy\"' ]; then
                   echo \"NOT_HEALTHY:\$svc:\$STATE\"

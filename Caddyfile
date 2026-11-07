@@ -11,7 +11,6 @@
     # Why: Eliminates server banner leakage during automated vulnerability scanning
     servers {
         trusted_proxies static private_ranges
-        default_sni {$SERVER_DOMAIN:140.238.240.128}
     }
     # Log access events in structured JSON format to stdout for log aggregators
     log {
@@ -30,7 +29,7 @@
     }
 }
 
-https://{$SERVER_DOMAIN:140.238.240.128}:443, https://localhost:443, :443 {
+https://{$SERVER_DOMAIN:140.238.240.128}, https://localhost {
 
     # Automatically generate self-signed TLS certificates for IP address and localhost
     # Why: Eliminates SNI host mismatch errors across direct IP, localhost, and custom port mappings
