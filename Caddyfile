@@ -29,11 +29,11 @@
     }
 }
 
-https://{$SERVER_DOMAIN:140.238.240.128}, https://localhost {
+:443 {
 
-    # Automatically generate self-signed TLS certificates for IP address and localhost
-    # Why: Eliminates SNI host mismatch errors across direct IP, localhost, and custom port mappings
-    tls internal
+    # Static TLS certificate with IP SAN for raw IP access without SNI
+    # Why: Eliminates Alert 80 TLS failure when clients connect via IP address without SNI
+    tls /etc/caddy/certs/cert.pem /etc/caddy/certs/key.pem
 
     # Mount static assets for web frontend SPA
     root * /var/www/html

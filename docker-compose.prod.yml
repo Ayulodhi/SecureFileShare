@@ -37,6 +37,9 @@ services:
       # Static production assets for zero-knowledge web frontend Single-Page Application
       # Why: Serves UI directly via Caddy file_server without adding another container or RAM footprint
       - ./web-app/dist:/var/www/html:ro
+      # Static TLS certificate with IP SAN for raw IP access without SNI
+      # Why: Ensures Caddy serves IP certificate unconditionally when clients connect by IP
+      - ./certs:/etc/caddy/certs:ro
       # Persistent TLS certificates and OCSP staples
       # Why: Prevents exhausting Let's Encrypt rate limits across container recreations
       - caddy_data:/data

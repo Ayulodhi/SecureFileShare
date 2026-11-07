@@ -32,3 +32,6 @@ web-app/dist/
 # Agent & workflow scratch
 .superpowers/
 
+# Local TLS certificates
+certs/
+

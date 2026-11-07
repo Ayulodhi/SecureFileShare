@@ -226,7 +226,20 @@ jobs:
           # Step 1: Ensure target directories exist on remote host with correct ownership
           # Why: /opt is root-owned on Ubuntu; sudo ensures directory exists and is owned by SERVER_USER
           echo "[1/7] Ensuring target directories on remote host..."
-          ${SSH_CMD} "sudo mkdir -p /opt/securefileshare/docker/postgres /opt/securefileshare/docker/minio /opt/securefileshare/web-app/dist && sudo chown -R ${SERVER_USER}:${SERVER_USER} /opt/securefileshare"
+          ${SSH_CMD} "sudo mkdir -p /opt/securefileshare/docker/postgres /opt/securefileshare/docker/minio /opt/securefileshare/web-app/dist /opt/securefileshare/certs && sudo chown -R ${SERVER_USER}:${SERVER_USER} /opt/securefileshare"
+          ${SSH_CMD} "
+            if [ ! -f /opt/securefileshare/certs/cert.pem ] || [ ! -f /opt/securefileshare/certs/key.pem ]; then
+              echo 'Generating 10-year self-signed TLS certificate with IP SAN for 140.238.240.128...'
+              openssl req -x509 -newkey rsa:2048 -nodes \
+                -keyout /opt/securefileshare/certs/key.pem \
+                -out /opt/securefileshare/certs/cert.pem \
+                -days 3650 \
+                -subj '/CN=140.238.240.128' \
+                -addext 'subjectAltName=IP:140.238.240.128,DNS:localhost'
+              chmod 644 /opt/securefileshare/certs/cert.pem
+              chmod 600 /opt/securefileshare/certs/key.pem
+            fi
+          "
 
           # Step 2: Capture currently deployed IMAGE_TAG for rollback safety
           # Why: If the new deployment fails health checks, we revert to this exact tag
