@@ -11,7 +11,7 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
 import { showToast } from '../components/Toast';
-import { Key, Shield, Download, Upload, Copy, Check, Lock, AlertTriangle, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Key, Shield, Download, Upload, Copy, Check, Lock, AlertTriangle, Sparkles } from 'lucide-react';
 
 export function KeysPage() {
   const { user, refreshKeyStatus } = useAuth();

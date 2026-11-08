@@ -23,7 +23,6 @@ import {
   Clock,
   FileText,
   Plus,
-  Lock,
   Sparkles,
 } from 'lucide-react';
 

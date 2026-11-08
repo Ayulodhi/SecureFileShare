@@ -5,7 +5,7 @@ import { Button } from '../components/Button';
 import { Table, Column } from '../components/Table';
 import { showToast } from '../components/Toast';
 import { formatTimestamp, getStatusBadgeInfo } from '../utils/formatters';
-import { Copy, Check, Trash2, RefreshCw, Share2, Sparkles, Clock, Link } from 'lucide-react';
+import { Copy, Check, Trash2, RefreshCw, Sparkles, Clock, Link } from 'lucide-react';
 
 export function SharesPage() {
   const [shares, setShares] = useState<ShareRecord[]>([]);

@@ -10,17 +10,13 @@ import { Button } from '../components/Button';
 import { formatFileSize } from '../utils/formatters';
 import {
   UploadCloud,
-  FileText,
   Shield,
   AlertCircle,
   User,
   Cpu,
   Lock,
-  CheckCircle2,
   Sparkles,
-  ArrowRight,
   FileCheck,
-  X,
 } from 'lucide-react';
 
 interface UploadPageProps {

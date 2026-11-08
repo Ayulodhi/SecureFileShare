@@ -4,7 +4,7 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { showToast } from '../components/Toast';
 import { formatTimestamp, isShareExpired } from '../utils/formatters';
-import { Shield, Download, FileText, AlertCircle, Clock, Sparkles, ArrowLeft } from 'lucide-react';
+import { Shield, Download, FileText, AlertCircle, Clock, ArrowLeft } from 'lucide-react';
 
 interface ShareAccessPageProps {
   token: string;

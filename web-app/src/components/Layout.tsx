@@ -7,10 +7,7 @@ import {
   FileText,
   Key,
   LogOut,
-  CheckCircle2,
-  AlertTriangle,
   User,
-  Sparkles,
 } from 'lucide-react';
 
 export type NavTab = 'files' | 'upload' | 'shares' | 'audit' | 'keys';

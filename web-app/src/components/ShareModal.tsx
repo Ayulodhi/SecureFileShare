@@ -5,7 +5,7 @@ import { shareApi, ShareRecord } from '../api/shareApi';
 import { FileMetadataResponse } from '../api/fileApi';
 import { showToast } from './Toast';
 import { formatTimestamp } from '../utils/formatters';
-import { Share2, Copy, Check, Calendar, User, FileText, Sparkles } from 'lucide-react';
+import { Share2, Copy, Check, Calendar, User, FileText } from 'lucide-react';
 
 interface ShareModalProps {
   file?: FileMetadataResponse;

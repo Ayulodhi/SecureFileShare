@@ -6,7 +6,7 @@ import { hasUserKeys } from '../crypto/keyVault';
 import { showToast } from '../components/Toast';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
-import { Shield, Lock, User, AlertCircle, Key, Sparkles, ArrowRight } from 'lucide-react';
+import { Shield, Lock, User, AlertCircle, Key, ArrowRight } from 'lucide-react';
 
 interface LoginPageProps {
   onNavigateToRegister: () => void;

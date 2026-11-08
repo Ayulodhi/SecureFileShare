@@ -5,7 +5,7 @@ import { Button } from '../components/Button';
 import { Table, Column } from '../components/Table';
 import { showToast } from '../components/Toast';
 import { formatTimestamp, formatHash } from '../utils/formatters';
-import { ShieldCheck, ShieldAlert, RefreshCw, CheckCircle2, Sparkles, Hash, Link2 } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, RefreshCw, CheckCircle2, Sparkles, Link2 } from 'lucide-react';
 
 export function AuditPage() {
   const [entries, setEntries] = useState<AuditEntry[]>([]);
