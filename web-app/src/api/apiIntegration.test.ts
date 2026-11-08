@@ -9,6 +9,19 @@ import {
   encryptFilePayload,
   decryptFilePayload,
 } from '../crypto/webCryptoService.ts';
+import {
+  formatFileSize,
+  formatHash,
+  formatTimestamp,
+  getStatusBadgeInfo,
+  isShareExpired,
+} from '../utils/formatters.ts';
+import {
+  validateUsername,
+  validateEmail,
+  validatePassword,
+  validatePasswordConfirmation,
+} from '../utils/validators.ts';
 
 test('Integration: Live Gateway Health Check over HTTP', async () => {
   // Verifies the live Caddy server on 140.238.240.128 is reachable and responding
@@ -59,6 +72,36 @@ test('Integration: Share Service Creation, Expiry Calculation and Revocation', a
   const revoked = shares.find((s) => s.id === share.id);
   assert.ok(revoked !== undefined, 'Share must exist');
   assert.strictEqual(revoked?.status, 'REVOKED', 'Share status must transition to REVOKED');
+});
+
+test('Integration: Public Share Link Access Flow with Token Resolution & Expiration Checking', async () => {
+  const fileId = 'file_token_test_' + Date.now().toString(36);
+  const share = await shareApi.createShareLink({
+    fileId,
+    fileName: 'quarterly_audit.pdf',
+    recipientUsername: 'public',
+    expiryOption: '1 hour',
+  });
+
+  // Extract token from share link (/share/:token)
+  const token = share.shareLink.split('/share/')[1];
+  assert.ok(token && token.length > 0, 'Token must be present in share URL');
+
+  // Query shareApi by token
+  const retrieved = await shareApi.getShareByToken(token);
+  assert.ok(retrieved !== null, 'Share must be retrievable by token');
+  assert.strictEqual(retrieved?.fileId, fileId);
+  assert.strictEqual(retrieved?.fileName, 'quarterly_audit.pdf');
+
+  // Verify expiration check with isShareExpired
+  assert.strictEqual(isShareExpired(retrieved!.expiresAt, retrieved!.status), false);
+
+  // Revoke share and verify isShareExpired returns true
+  await shareApi.revokeShare(retrieved!.id);
+  const revokedShare = await shareApi.getShareByToken(token);
+  assert.ok(revokedShare !== null);
+  assert.strictEqual(revokedShare?.status, 'REVOKED');
+  assert.strictEqual(isShareExpired(revokedShare!.expiresAt, revokedShare!.status), true);
 });
 
 test('Integration: Audit Service Hash Chain Integrity Verification', async () => {
@@ -136,3 +179,64 @@ test('Integration: Full End-to-End Zero-Knowledge File Lifecycle (Encrypt -> Upl
   assert.strictEqual(decryptedText, originalText, 'Decrypted text must match original plaintext exactly');
 });
 
+test('Integration: Multi-User Security - Unauthorized Private Key Cannot Decrypt Package', async () => {
+  // Alice generates keys
+  const alice = await generateUserKeyPairBundle('alice_' + Date.now().toString(36));
+  // Bob generates keys
+  const bob = await generateUserKeyPairBundle('bob_' + Date.now().toString(36));
+  // Eve (attacker) generates keys
+  const eve = await generateUserKeyPairBundle('eve_' + Date.now().toString(36));
+
+  // Alice encrypts a file specifically for Bob
+  const secretContent = 'FOR BOB EYES ONLY - RESTRICTED CLEARANCE';
+  const file = new File([new TextEncoder().encode(secretContent)], 'for_bob.txt', { type: 'text/plain' });
+
+  const encryptedForBob = await encryptFilePayload(
+    file,
+    bob.rsaPublicKeyPem,
+    alice.ecPrivateKey
+  );
+
+  // Bob can decrypt successfully
+  const bobBuffer = await decryptFilePayload(
+    await encryptedForBob.ciphertextBlob.arrayBuffer(),
+    encryptedForBob.ivBase64,
+    encryptedForBob.ownerWrappedKeyBase64,
+    bob.rsaPrivateKey
+  );
+  assert.strictEqual(new TextDecoder().decode(bobBuffer), secretContent);
+
+  // Eve attempts to decrypt with her own private key -> must throw
+  await assert.rejects(
+    async () => {
+      await decryptFilePayload(
+        await encryptedForBob.ciphertextBlob.arrayBuffer(),
+        encryptedForBob.ivBase64,
+        encryptedForBob.ownerWrappedKeyBase64,
+        eve.rsaPrivateKey
+      );
+    },
+    'Unauthorized key must fail RSA-OAEP DEK unwrapping'
+  );
+});
+
+test('Integration: UI Formatting and Presentation Layer with Live API DTOs', async () => {
+  // Test file metadata response formatting
+  const mockFileDto = {
+    id: 'f_test_123',
+    ownerId: 'u_1',
+    originalName: 'quarterly_financials_2026.xlsx',
+    sizeBytes: 1572864, // 1.5 MB
+    contentType: 'application/octet-stream',
+    iv: 'dGVzdF9pdg==',
+    ciphertextSha256: 'a1b2c3d4e5f60718293a4b5c6d7e8f901234567890abcdef1234567890abcdef',
+    status: 'CLEAN' as const,
+    createdAt: '2026-11-08T18:00:00.000Z',
+    updatedAt: '2026-11-08T18:00:00.000Z',
+  };
+
+  assert.strictEqual(formatFileSize(mockFileDto.sizeBytes), '1.5 MB');
+  assert.strictEqual(formatHash(mockFileDto.ciphertextSha256), 'a1b2c3d4e5f60718...');
+  assert.strictEqual(formatTimestamp(mockFileDto.createdAt), '2026-11-08 18:00:00');
+  assert.deepStrictEqual(getStatusBadgeInfo(mockFileDto.status), { variant: 'success', label: 'Clean' });
+});

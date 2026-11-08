@@ -7,13 +7,20 @@ import { fileApi } from '../api/fileApi';
 import { showToast } from '../components/Toast';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
+import { formatFileSize } from '../utils/formatters';
 import {
   UploadCloud,
-  File,
+  FileText,
   Shield,
   AlertCircle,
   User,
   Cpu,
+  Lock,
+  CheckCircle2,
+  Sparkles,
+  ArrowRight,
+  FileCheck,
+  X,
 } from 'lucide-react';
 
 interface UploadPageProps {
@@ -119,57 +126,102 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       {/* Page Header */}
-      <div style={{ paddingBottom: '1.25rem', borderBottom: 'var(--border-hairline)' }}>
-        <div className="subheading-swiss" style={{ marginBottom: '0.35rem' }}>
-          Client-Side Cryptography Pipeline
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-end',
+          paddingBottom: '1.5rem',
+          borderBottom: '1px solid var(--hairline)',
+        }}
+      >
+        <div>
+          <div className="subheading-kicker" style={{ marginBottom: '0.4rem' }}>
+            <Sparkles size={13} />
+            Client-Side Cryptography Pipeline
+          </div>
+          <h1
+            style={{
+              fontSize: '1.75rem',
+              fontWeight: 700,
+              letterSpacing: '-0.03em',
+              color: 'var(--text-primary)',
+            }}
+          >
+            Upload & Encrypt
+          </h1>
         </div>
-        <h2
+        <div
           style={{
-            fontSize: '1.5rem',
-            fontWeight: 700,
-            letterSpacing: '-0.02em',
-            color: 'var(--text-primary)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            background: 'rgba(99, 102, 241, 0.08)',
+            border: '1px solid rgba(99, 102, 241, 0.25)',
+            padding: '0.4rem 0.85rem',
+            borderRadius: 'var(--radius-pill)',
+            fontSize: '0.75rem',
+            color: '#818cf8',
+            fontWeight: 500,
           }}
         >
-          Upload & Encrypt
-        </h2>
+          <Lock size={12} />
+          <span>Zero-Knowledge AES-256-GCM</span>
+        </div>
       </div>
 
-      <Card title="Encryption Ingress" subtitle="AES-256-GCM + RSA-4096 Key Wrapping">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <Card
+        title="Encryption Ingress"
+        subtitle="End-to-End Cryptographic Transfer"
+        className="card-glow"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
           {error && (
             <div
               style={{
                 background: 'var(--status-danger-bg)',
                 border: '1px solid var(--status-danger-border)',
                 color: 'var(--status-danger)',
-                padding: '0.75rem 1rem',
-                borderRadius: 'var(--radius-sharp)',
-                fontSize: '0.8125rem',
+                padding: '0.85rem 1.15rem',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '0.875rem',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
+                gap: '0.65rem',
               }}
             >
-              <AlertCircle size={15} />
+              <AlertCircle size={18} style={{ flexShrink: 0 }} />
               <span>{error}</span>
             </div>
           )}
 
-          {/* Drag & Drop Hairline Target */}
+          {/* GetShared-Inspired Interactive Drop Zone */}
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
             style={{
-              border: isDragging ? '1px solid var(--accent-primary)' : '1px dashed var(--hairline-strong)',
-              borderRadius: 'var(--radius-sharp)',
-              padding: '3rem 1.5rem',
+              border: isDragging
+                ? '2px solid var(--accent-primary)'
+                : selectedFile
+                ? '1px solid rgba(16, 185, 129, 0.4)'
+                : '1px dashed rgba(255, 255, 255, 0.2)',
+              borderRadius: 'var(--radius-xl)',
+              padding: selectedFile ? '2.5rem 2rem' : '3.5rem 2rem',
               textAlign: 'center',
               cursor: 'pointer',
-              background: isDragging ? 'var(--accent-tint)' : 'var(--bg-secondary)',
-              transition: 'all 0.12s ease',
+              background: isDragging
+                ? 'rgba(99, 102, 241, 0.15)'
+                : selectedFile
+                ? 'rgba(16, 185, 129, 0.04)'
+                : 'rgba(255, 255, 255, 0.02)',
+              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+              boxShadow: isDragging
+                ? '0 0 35px rgba(99, 102, 241, 0.3)'
+                : 'none',
+              position: 'relative',
+              overflow: 'hidden',
             }}
           >
             <input
@@ -178,127 +230,269 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
               onChange={handleFileChange}
               style={{ display: 'none' }}
             />
-            <div
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: 'var(--radius-sharp)',
-                background: 'var(--bg-surface)',
-                border: 'var(--border-hairline)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 1rem',
-              }}
-            >
-              <UploadCloud size={20} color="var(--accent-primary)" />
-            </div>
 
             {selectedFile ? (
-              <div>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
-                  <File size={16} color="var(--accent-primary)" />
-                  <span style={{ fontSize: '0.9rem' }}>{selectedFile.name}</span>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '1rem',
+                }}
+              >
+                <div
+                  style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: 'var(--radius-lg)',
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 20px rgba(16, 185, 129, 0.2)',
+                  }}
+                >
+                  <FileCheck size={28} color="var(--status-clean)" />
+                </div>
+                <div>
+                  <div
+                    style={{
+                      fontSize: '1.1rem',
+                      fontWeight: 600,
+                      color: 'var(--text-primary)',
+                      marginBottom: '0.25rem',
+                      wordBreak: 'break-all',
+                    }}
+                  >
+                    {selectedFile.name}
+                  </div>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      fontSize: '0.8125rem',
+                      color: 'var(--text-muted)',
+                      fontFamily: 'var(--font-mono)',
+                    }}
+                  >
+                    <span
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.06)',
+                        padding: '0.2rem 0.6rem',
+                        borderRadius: 'var(--radius-pill)',
+                        color: 'var(--text-secondary)',
+                      }}
+                    >
+                      {formatFileSize(selectedFile.size)}
+                    </span>
+                    <span>Ready for local encryption</span>
+                  </div>
                 </div>
                 <div
-                  className="font-mono"
-                  style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}
+                  style={{
+                    fontSize: '0.75rem',
+                    color: 'var(--accent-primary)',
+                    fontWeight: 500,
+                    marginTop: '0.25rem',
+                  }}
                 >
-                  {(selectedFile.size / 1024).toFixed(1)} KB — Click or drop to replace
+                  Click or drop another file to replace
                 </div>
               </div>
             ) : (
-              <div>
-                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                  Drop plaintext file here or click to browse
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                }}
+              >
+                <div
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: 'var(--radius-xl)',
+                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.15))',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '1.25rem',
+                    boxShadow: '0 8px 24px rgba(99, 102, 241, 0.25)',
+                    animation: 'floatSoft 3s ease-in-out infinite',
+                  }}
+                >
+                  <UploadCloud size={30} color="#818cf8" />
                 </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
-                  Payload is encrypted with AES-256-GCM before exiting this browser.
+                <div
+                  style={{
+                    fontSize: '1.05rem',
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                    marginBottom: '0.4rem',
+                  }}
+                >
+                  Choose a file or drag & drop it here
+                </div>
+                <div
+                  style={{
+                    fontSize: '0.8125rem',
+                    color: 'var(--text-muted)',
+                    maxWidth: '420px',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Payload is encrypted locally in your browser with AES-256-GCM before transmission. Zero server access.
                 </div>
               </div>
             )}
           </div>
 
-          {/* Recipient Encryption Binding */}
+          {/* Segmented Option Selector: Key Wrapping Target */}
           <div
             style={{
-              borderTop: 'var(--border-hairline)',
-              paddingTop: '1.25rem',
+              borderTop: '1px solid var(--hairline)',
+              paddingTop: '1.5rem',
               display: 'flex',
               flexDirection: 'column',
               gap: '1rem',
             }}
           >
-            <label
+            <div
               style={{
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                letterSpacing: '0.08em',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                letterSpacing: '0.04em',
                 textTransform: 'uppercase',
                 color: 'var(--text-muted)',
               }}
             >
               Key Wrapping Target
-            </label>
+            </div>
 
-            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-              <label
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: '0.85rem',
+              }}
+            >
+              {/* Option 1: Myself */}
+              <div
+                onClick={() => setIsSelf(true)}
                 style={{
+                  padding: '1rem 1.15rem',
+                  borderRadius: 'var(--radius-md)',
+                  border: isSelf
+                    ? '1px solid var(--accent-primary)'
+                    : '1px solid var(--hairline)',
+                  background: isSelf
+                    ? 'rgba(99, 102, 241, 0.1)'
+                    : 'rgba(255, 255, 255, 0.02)',
+                  cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.5rem',
-                  fontSize: '0.8125rem',
-                  cursor: 'pointer',
-                  color: isSelf ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  gap: '0.85rem',
+                  transition: 'all 0.2s ease',
+                  boxShadow: isSelf ? '0 0 15px rgba(99, 102, 241, 0.2)' : 'none',
                 }}
               >
-                <input
-                  type="radio"
-                  name="recipientType"
-                  checked={isSelf}
-                  onChange={() => setIsSelf(true)}
-                  style={{ accentColor: 'var(--accent-primary)' }}
+                <div
+                  style={{
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    border: isSelf
+                      ? '5px solid var(--accent-primary)'
+                      : '2px solid var(--text-muted)',
+                    background: '#ffffff',
+                    flexShrink: 0,
+                    transition: 'all 0.2s ease',
+                  }}
                 />
-                <span>Encrypt for Myself ({user?.username})</span>
-              </label>
+                <div>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    Encrypt for Myself
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                    Wraps key with your RSA public key ({user?.username})
+                  </div>
+                </div>
+              </div>
 
-              <label
+              {/* Option 2: Recipient User */}
+              <div
+                onClick={() => setIsSelf(false)}
                 style={{
+                  padding: '1rem 1.15rem',
+                  borderRadius: 'var(--radius-md)',
+                  border: !isSelf
+                    ? '1px solid var(--accent-primary)'
+                    : '1px solid var(--hairline)',
+                  background: !isSelf
+                    ? 'rgba(99, 102, 241, 0.1)'
+                    : 'rgba(255, 255, 255, 0.02)',
+                  cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.5rem',
-                  fontSize: '0.8125rem',
-                  cursor: 'pointer',
-                  color: !isSelf ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  gap: '0.85rem',
+                  transition: 'all 0.2s ease',
+                  boxShadow: !isSelf ? '0 0 15px rgba(99, 102, 241, 0.2)' : 'none',
                 }}
               >
-                <input
-                  type="radio"
-                  name="recipientType"
-                  checked={!isSelf}
-                  onChange={() => setIsSelf(false)}
-                  style={{ accentColor: 'var(--accent-primary)' }}
+                <div
+                  style={{
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    border: !isSelf
+                      ? '5px solid var(--accent-primary)'
+                      : '2px solid var(--text-muted)',
+                    background: '#ffffff',
+                    flexShrink: 0,
+                    transition: 'all 0.2s ease',
+                  }}
                 />
-                <span>Encrypt for Recipient User</span>
-              </label>
+                <div>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    Encrypt for Specific Recipient
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                    Resolves recipient's verified RSA public key
+                  </div>
+                </div>
+              </div>
             </div>
 
             {!isSelf && (
               <div style={{ marginTop: '0.5rem' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    marginBottom: '0.45rem',
+                    color: 'var(--text-secondary)',
+                  }}
+                >
+                  Recipient Username
+                </label>
                 <div style={{ position: 'relative' }}>
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="Recipient username (e.g. alice)"
+                    placeholder="Enter registered recipient username (e.g. alice)"
                     value={recipientUsername}
                     onChange={(e) => setRecipientUsername(e.target.value)}
-                    style={{ paddingLeft: '2.4rem' }}
+                    style={{ paddingLeft: '2.5rem' }}
                   />
                   <User
-                    size={15}
+                    size={16}
                     style={{
                       position: 'absolute',
-                      left: '0.85rem',
+                      left: '0.9rem',
                       top: '50%',
                       transform: 'translateY(-50%)',
                       color: 'var(--text-muted)',
@@ -313,31 +507,54 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
           {progressStep && (
             <div
               style={{
-                background: 'var(--accent-tint)',
-                border: '1px solid var(--accent-primary)',
+                background: 'rgba(99, 102, 241, 0.12)',
+                border: '1px solid rgba(99, 102, 241, 0.35)',
                 color: 'var(--text-primary)',
-                padding: '0.75rem 1rem',
-                borderRadius: 'var(--radius-sharp)',
-                fontSize: '0.8125rem',
+                padding: '0.9rem 1.15rem',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '0.875rem',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.65rem',
+                gap: '0.75rem',
+                boxShadow: '0 0 20px rgba(99, 102, 241, 0.15)',
               }}
             >
-              <Cpu size={15} color="var(--accent-primary)" />
-              <span className="font-mono" style={{ fontSize: '0.75rem' }}>
+              <Cpu size={18} color="#818cf8" style={{ animation: 'pulseGlow 1.5s infinite' }} />
+              <span className="font-mono" style={{ fontSize: '0.8125rem' }}>
                 {progressStep}
               </span>
             </div>
           )}
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+          {/* Footer Actions */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              gap: '1rem',
+              paddingTop: '0.5rem',
+            }}
+          >
+            {selectedFile && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setSelectedFile(null);
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }}
+                disabled={encrypting}
+              >
+                Clear
+              </Button>
+            )}
             <Button
               variant="primary"
               onClick={handleUpload}
               disabled={!selectedFile || encrypting}
               loading={encrypting}
-              icon={<Shield size={14} />}
+              icon={<Shield size={16} />}
+              style={{ minWidth: '180px' }}
             >
               Encrypt & Upload
             </Button>

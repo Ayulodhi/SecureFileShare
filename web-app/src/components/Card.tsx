@@ -24,22 +24,23 @@ export function Card({
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'baseline',
+            alignItems: 'flex-start',
             marginBottom: '1.5rem',
-            paddingBottom: '0.85rem',
-            borderBottom: 'var(--border-hairline)',
+            paddingBottom: '1rem',
+            borderBottom: '1px solid var(--hairline)',
+            gap: '1rem',
           }}
         >
           <div>
             {subtitle && (
               <div
                 style={{
-                  fontSize: '0.68rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.04em',
                   textTransform: 'uppercase',
                   color: 'var(--text-muted)',
-                  marginBottom: '0.25rem',
+                  marginBottom: '0.35rem',
                 }}
               >
                 {subtitle}
@@ -48,10 +49,11 @@ export function Card({
             {title && (
               <h2
                 style={{
-                  fontSize: '1.15rem',
-                  fontWeight: 700,
+                  fontSize: '1.25rem',
+                  fontWeight: 600,
                   color: 'var(--text-primary)',
                   letterSpacing: '-0.02em',
+                  lineHeight: 1.25,
                 }}
               >
                 {title}

@@ -7,8 +7,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "tsx --test src/crypto/webCryptoService.test.ts",
-    "test:integration": "tsx --test src/api/apiIntegration.test.ts"
+    "test": "tsx --test src/crypto/webCryptoService.test.ts src/utils/formatters.test.ts src/utils/validators.test.ts",
+    "test:integration": "tsx --test src/api/apiIntegration.test.ts",
+    "test:all": "tsx --test src/crypto/webCryptoService.test.ts src/utils/formatters.test.ts src/utils/validators.test.ts src/api/apiIntegration.test.ts"
   },
   "dependencies": {
     "lucide-react": "^0.460.0",

@@ -4,7 +4,8 @@ import { Button } from './Button';
 import { shareApi, ShareRecord } from '../api/shareApi';
 import { FileMetadataResponse } from '../api/fileApi';
 import { showToast } from './Toast';
-import { Share2, Copy, Check, Calendar, User } from 'lucide-react';
+import { formatTimestamp } from '../utils/formatters';
+import { Share2, Copy, Check, Calendar, User, FileText, Sparkles } from 'lucide-react';
 
 interface ShareModalProps {
   file?: FileMetadataResponse;
@@ -70,23 +71,59 @@ export function ShareModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleReset} title="Generate Share Authorization" maxWidth="480px">
+    <Modal isOpen={isOpen} onClose={handleReset} title="Generate Share Authorization" maxWidth="500px">
       {!createdShare ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div>
-            <span
+          {/* Target Resource Preview Card */}
+          <div
+            style={{
+              padding: '0.85rem 1rem',
+              borderRadius: 'var(--radius-md)',
+              background: 'rgba(255, 255, 255, 0.03)',
+              border: '1px solid var(--hairline)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+            }}
+          >
+            <div
               style={{
-                fontSize: '0.68rem',
-                fontWeight: 700,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                color: 'var(--text-muted)',
+                width: '32px',
+                height: '32px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'rgba(99, 102, 241, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#818cf8',
               }}
             >
-              Target Resource
-            </span>
-            <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginTop: '0.2rem' }}>
-              {targetFileName}
+              <FileText size={16} />
+            </div>
+            <div style={{ overflow: 'hidden' }}>
+              <div
+                style={{
+                  fontSize: '0.6875rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                  color: 'var(--text-muted)',
+                }}
+              >
+                Target Resource
+              </div>
+              <div
+                style={{
+                  fontWeight: 600,
+                  color: 'var(--text-primary)',
+                  fontSize: '0.9rem',
+                  whiteSpace: 'nowrap',
+                  textOverflow: 'ellipsis',
+                  overflow: 'hidden',
+                }}
+              >
+                {targetFileName}
+              </div>
             </div>
           </div>
 
@@ -94,12 +131,11 @@ export function ShareModal({
             <label
               style={{
                 display: 'block',
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                marginBottom: '0.4rem',
-                color: 'var(--text-muted)',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                letterSpacing: '0.02em',
+                marginBottom: '0.45rem',
+                color: 'var(--text-secondary)',
               }}
             >
               Recipient Username (Optional)
@@ -111,13 +147,13 @@ export function ShareModal({
                 placeholder="Leave blank for any recipient with link"
                 value={recipient}
                 onChange={(e) => setRecipient(e.target.value)}
-                style={{ paddingLeft: '2.4rem' }}
+                style={{ paddingLeft: '2.5rem' }}
               />
               <User
-                size={15}
+                size={16}
                 style={{
                   position: 'absolute',
-                  left: '0.85rem',
+                  left: '0.9rem',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   color: 'var(--text-muted)',
@@ -130,12 +166,11 @@ export function ShareModal({
             <label
               style={{
                 display: 'block',
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                marginBottom: '0.4rem',
-                color: 'var(--text-muted)',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                letterSpacing: '0.02em',
+                marginBottom: '0.45rem',
+                color: 'var(--text-secondary)',
               }}
             >
               Authorization Expiry
@@ -145,7 +180,7 @@ export function ShareModal({
                 className="form-input"
                 value={expiry}
                 onChange={(e) => setExpiry(e.target.value)}
-                style={{ paddingLeft: '2.4rem' }}
+                style={{ paddingLeft: '2.5rem' }}
               >
                 <option value="1 hour">1 hour</option>
                 <option value="24 hours">24 hours</option>
@@ -153,10 +188,10 @@ export function ShareModal({
                 <option value="30 days">30 days</option>
               </select>
               <Calendar
-                size={15}
+                size={16}
                 style={{
                   position: 'absolute',
-                  left: '0.85rem',
+                  left: '0.9rem',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   color: 'var(--text-muted)',
@@ -173,7 +208,7 @@ export function ShareModal({
               variant="primary"
               onClick={handleCreate}
               loading={loading}
-              icon={<Share2 size={13} />}
+              icon={<Share2 size={15} />}
             >
               Generate Link
             </Button>
@@ -183,28 +218,31 @@ export function ShareModal({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div
             style={{
-              padding: '0.75rem 1rem',
-              borderRadius: 'var(--radius-sharp)',
+              padding: '0.85rem 1rem',
+              borderRadius: 'var(--radius-md)',
               background: 'var(--status-clean-bg)',
               border: '1px solid var(--status-clean-border)',
               color: 'var(--status-clean)',
               fontSize: '0.8125rem',
               fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
             }}
           >
-            AUTHORIZATION TOKEN GENERATED
+            <Check size={16} />
+            <span>Authorization link active and ready to share</span>
           </div>
 
           <div>
             <label
               style={{
                 display: 'block',
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                marginBottom: '0.4rem',
-                color: 'var(--text-muted)',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                letterSpacing: '0.02em',
+                marginBottom: '0.45rem',
+                color: 'var(--text-secondary)',
               }}
             >
               Share URL
@@ -215,20 +253,30 @@ export function ShareModal({
                 readOnly
                 className="form-input font-mono"
                 value={createdShare.shareLink}
-                style={{ fontSize: '0.8rem', background: 'var(--bg-input)' }}
+                style={{ fontSize: '0.8125rem', background: 'rgba(0, 0, 0, 0.4)' }}
               />
               <Button
                 variant="primary"
                 onClick={handleCopy}
-                icon={copied ? <Check size={13} /> : <Copy size={13} />}
+                icon={copied ? <Check size={15} /> : <Copy size={15} />}
               >
                 {copied ? 'Copied' : 'Copy'}
               </Button>
             </div>
           </div>
 
-          <div className="font-mono" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            EXPIRATION: {new Date(createdShare.expiresAt).toISOString().replace('T', ' ').substring(0, 19)}
+          <div
+            style={{
+              fontSize: '0.75rem',
+              color: 'var(--text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              fontFamily: 'var(--font-mono)',
+            }}
+          >
+            <Calendar size={13} />
+            <span>Expires: {formatTimestamp(createdShare.expiresAt)}</span>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>

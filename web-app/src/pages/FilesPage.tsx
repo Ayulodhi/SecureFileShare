@@ -9,14 +9,22 @@ import { Button } from '../components/Button';
 import { Table, Column } from '../components/Table';
 import { ShareModal } from '../components/ShareModal';
 import {
+  formatFileSize,
+  formatHash,
+  formatTimestamp,
+  getStatusBadgeInfo,
+} from '../utils/formatters';
+import {
   Download,
   Share2,
   RefreshCw,
   FileCheck,
   ShieldAlert,
   Clock,
-  File,
+  FileText,
   Plus,
+  Lock,
+  Sparkles,
 } from 'lucide-react';
 
 interface FilesPageProps {
@@ -90,28 +98,41 @@ export function FilesPage({ onNavigateToUpload }: FilesPageProps) {
     {
       header: 'File Name',
       accessor: (f) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
           <div
             style={{
-              width: '24px',
-              height: '24px',
-              border: 'var(--border-hairline)',
-              background: 'var(--bg-secondary)',
-              borderRadius: 'var(--radius-sharp)',
+              width: '36px',
+              height: '36px',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.1))',
+              borderRadius: 'var(--radius-sm)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              color: '#818cf8',
+              flexShrink: 0,
             }}
           >
-            <File size={13} color="var(--accent-primary)" />
+            <FileText size={18} />
           </div>
-          <div>
-            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{f.originalName}</div>
+          <div style={{ overflow: 'hidden' }}>
             <div
-              style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}
+              style={{
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+                fontSize: '0.9rem',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+                overflow: 'hidden',
+              }}
+            >
+              {f.originalName}
+            </div>
+            <div
+              style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}
               className="font-mono"
             >
-              SHA-256: {f.ciphertextSha256 ? f.ciphertextSha256.substring(0, 16) + '...' : 'Verified'}
+              SHA-256: {formatHash(f.ciphertextSha256)}
             </div>
           </div>
         </div>
@@ -120,36 +141,45 @@ export function FilesPage({ onNavigateToUpload }: FilesPageProps) {
     {
       header: 'Ciphertext Size',
       accessor: (f) => (
-        <span className="font-mono" style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-          {(f.sizeBytes / 1024).toFixed(1)} KB
+        <span
+          className="font-mono"
+          style={{
+            color: 'var(--text-secondary)',
+            fontSize: '0.8125rem',
+            background: 'rgba(255, 255, 255, 0.04)',
+            padding: '0.2rem 0.55rem',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--hairline)',
+          }}
+        >
+          {formatFileSize(f.sizeBytes)}
         </span>
       ),
-      width: '130px',
+      width: '140px',
     },
     {
       header: 'Integrity',
       accessor: (f) => {
-        const isClean = f.status === 'CLEAN';
-        const isPending = f.status === 'PENDING_SCAN';
+        const badge = getStatusBadgeInfo(f.status);
+        const isClean = badge.variant === 'success';
+        const isPending = badge.variant === 'warning';
         return (
-          <span
-            className={`badge ${isClean ? 'badge-success' : isPending ? 'badge-warning' : 'badge-danger'}`}
-          >
-            {isClean ? <FileCheck size={11} /> : isPending ? <Clock size={11} /> : <ShieldAlert size={11} />}
-            <span>{f.status}</span>
+          <span className={`badge badge-${badge.variant}`}>
+            {isClean ? <FileCheck size={12} /> : isPending ? <Clock size={12} /> : <ShieldAlert size={12} />}
+            <span>{badge.label}</span>
           </span>
         );
       },
-      width: '130px',
+      width: '140px',
     },
     {
-      header: 'Timestamp',
+      header: 'Created',
       accessor: (f) => (
-        <span className="font-mono" style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
-          {new Date(f.createdAt).toISOString().replace('T', ' ').substring(0, 19)}
+        <span className="font-mono" style={{ color: 'var(--text-muted)', fontSize: '0.775rem' }}>
+          {formatTimestamp(f.createdAt)}
         </span>
       ),
-      width: '180px',
+      width: '170px',
     },
     {
       header: 'Actions',
@@ -160,7 +190,7 @@ export function FilesPage({ onNavigateToUpload }: FilesPageProps) {
             onClick={() => handleDownloadAndDecrypt(f)}
             loading={decryptingFileId === f.id}
             icon={<Download size={13} />}
-            style={{ padding: '0.45rem 0.75rem', fontSize: '0.75rem' }}
+            style={{ padding: '0.45rem 0.85rem', fontSize: '0.785rem' }}
           >
             Decrypt
           </Button>
@@ -168,13 +198,13 @@ export function FilesPage({ onNavigateToUpload }: FilesPageProps) {
             variant="primary"
             onClick={() => setShareTarget(f)}
             icon={<Share2 size={13} />}
-            style={{ padding: '0.45rem 0.75rem', fontSize: '0.75rem' }}
+            style={{ padding: '0.45rem 0.85rem', fontSize: '0.785rem' }}
           >
             Share
           </Button>
         </div>
       ),
-      width: '190px',
+      width: '200px',
     },
   ];
 
@@ -186,24 +216,25 @@ export function FilesPage({ onNavigateToUpload }: FilesPageProps) {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-end',
-          paddingBottom: '1.25rem',
-          borderBottom: 'var(--border-hairline)',
+          paddingBottom: '1.5rem',
+          borderBottom: '1px solid var(--hairline)',
         }}
       >
         <div>
-          <div className="subheading-swiss" style={{ marginBottom: '0.35rem' }}>
+          <div className="subheading-kicker" style={{ marginBottom: '0.4rem' }}>
+            <Sparkles size={13} />
             Zero-Knowledge Repository
           </div>
-          <h2
+          <h1
             style={{
-              fontSize: '1.5rem',
+              fontSize: '1.75rem',
               fontWeight: 700,
-              letterSpacing: '-0.02em',
+              letterSpacing: '-0.03em',
               color: 'var(--text-primary)',
             }}
           >
             Encrypted Files
-          </h2>
+          </h1>
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -218,20 +249,24 @@ export function FilesPage({ onNavigateToUpload }: FilesPageProps) {
           <Button
             variant="primary"
             onClick={onNavigateToUpload}
-            icon={<Plus size={14} />}
+            icon={<Plus size={15} />}
           >
             Upload File
           </Button>
         </div>
       </div>
 
-      {/* Files Table */}
-      <Card title="Repository Inventory" subtitle="Payloads stored as AES-256-GCM ciphertexts">
+      {/* Files Table Card */}
+      <Card
+        title="Repository Inventory"
+        subtitle="Payloads encrypted with client AES-256-GCM"
+        className="card-glow"
+      >
         <Table
           columns={columns}
           data={files}
           loading={loading}
-          emptyMessage="No encrypted files present in repository."
+          emptyMessage="No encrypted files found in repository. Click 'Upload File' to get started."
         />
       </Card>
 

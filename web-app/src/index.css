@@ -1,53 +1,69 @@
 /* ==============================================================================
-   Swiss International Typographic Design System - SecureFileShare
-   Anchor: Swiss (High-contrast graphite/white, International Orange #FF4F00 accent,
-           1px precision hairline grid rules, tabular metrics, left-aligned hierarchy)
+   Shared-Inspired Design System - SecureFileShare
+   Aesthetic: Luminous Dark Glassmorphism (GetShared aesthetic)
+   Palette: Deep Void Slate (#07090e / #0b0f19), Electric Indigo (#6366f1) & Cyan (#06b6d4),
+            Translucent frosted glass with 1px luminous borders, ambient radial auras,
+            pill status badges with glowing pulse indicators, and modern typography.
    ============================================================================== */
 
 :root {
-  /* Surfaces */
-  --bg-primary: #090a0c;
-  --bg-secondary: #0f1013;
-  --bg-surface: #14161a;
-  --bg-surface-hover: #1c1e24;
-  --bg-input: #0d0e11;
+  /* Canvas & Atmospheric Surfaces */
+  --bg-primary: #07090e;
+  --bg-secondary: rgba(12, 16, 26, 0.85);
+  --bg-surface: rgba(16, 21, 35, 0.72);
+  --bg-surface-elevated: rgba(22, 29, 48, 0.85);
+  --bg-surface-hover: rgba(30, 39, 64, 0.9);
+  --bg-input: rgba(9, 12, 20, 0.7);
 
-  /* Structure & Hairline Grids */
-  --hairline: #22252c;
-  --hairline-strong: #323640;
-  --hairline-focus: #ff4f00;
+  /* Glass Borders & Lighting */
+  --hairline: rgba(255, 255, 255, 0.07);
+  --hairline-strong: rgba(255, 255, 255, 0.14);
+  --hairline-glow: rgba(99, 102, 241, 0.4);
+  --border-glass: 1px solid var(--hairline);
+  --border-glass-strong: 1px solid var(--hairline-strong);
 
   /* Typography */
-  --text-primary: #ffffff;
-  --text-secondary: #a3a8b4;
-  --text-muted: #5e6473;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, Menlo, monospace;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
 
-  /* Deliberate Accent: International Orange */
-  --accent-primary: #ff4f00;
-  --accent-primary-hover: #e54700;
-  --accent-primary-active: #cc3f00;
-  --accent-tint: rgba(255, 79, 0, 0.1);
-  --accent-tint-strong: rgba(255, 79, 0, 0.2);
+  /* Accent: Electric Indigo / Cyan Gradient Sheen */
+  --accent-primary: #6366f1;
+  --accent-primary-hover: #4f46e5;
+  --accent-primary-active: #4338ca;
+  --accent-secondary: #06b6d4;
+  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #3b82f6 50%, #06b6d4 100%);
+  --accent-tint: rgba(99, 102, 241, 0.12);
+  --accent-tint-strong: rgba(99, 102, 241, 0.22);
+  --accent-glow: 0 0 24px -2px rgba(99, 102, 241, 0.4);
 
-  /* Semantic Status Signals */
-  --status-clean: #00d66f;
-  --status-clean-bg: rgba(0, 214, 111, 0.08);
-  --status-clean-border: rgba(0, 214, 111, 0.25);
+  /* Status Signals */
+  --status-clean: #10b981;
+  --status-clean-bg: rgba(16, 185, 129, 0.12);
+  --status-clean-border: rgba(16, 185, 129, 0.3);
 
-  --status-warn: #ffb800;
-  --status-warn-bg: rgba(255, 184, 0, 0.08);
-  --status-warn-border: rgba(255, 184, 0, 0.25);
+  --status-warn: #f59e0b;
+  --status-warn-bg: rgba(245, 158, 11, 0.12);
+  --status-warn-border: rgba(245, 158, 11, 0.3);
 
-  --status-danger: #ff3344;
-  --status-danger-bg: rgba(255, 51, 68, 0.08);
-  --status-danger-border: rgba(255, 51, 68, 0.25);
+  --status-danger: #f43f5e;
+  --status-danger-bg: rgba(244, 63, 94, 0.12);
+  --status-danger-border: rgba(244, 63, 94, 0.3);
 
-  /* Geometry & Rules */
-  --radius-sharp: 2px;
-  --border-hairline: 1px solid var(--hairline);
-  --border-hairline-strong: 1px solid var(--hairline-strong);
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-pill: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--hairline);
+  --shadow-card-hover: 0 16px 40px -10px rgba(0, 0, 0, 0.65), 0 0 0 1px var(--hairline-strong), 0 0 24px -4px rgba(99, 102, 241, 0.15);
+  --shadow-elevated: 0 20px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--hairline-strong);
 }
 
 * {
@@ -59,6 +75,11 @@
 body {
   font-family: var(--font-sans);
   background-color: var(--bg-primary);
+  background-image:
+    radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.12) 0%, transparent 55%),
+    radial-gradient(circle at 90% 85%, rgba(6, 182, 212, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 10% 70%, rgba(16, 185, 129, 0.05) 0%, transparent 45%);
+  background-attachment: fixed;
   color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.5;
@@ -66,84 +87,114 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Swiss Hairline Card Surfaces */
+/* Glass Card Surfaces */
 .card {
   background: var(--bg-surface);
-  border: var(--border-hairline);
-  border-radius: var(--radius-sharp);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: var(--border-glass);
+  border-radius: var(--radius-lg);
   padding: 1.75rem;
-  box-shadow: none;
-  transition: border-color 0.15s ease;
+  box-shadow: var(--shadow-card);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
 }
 
 .card:hover {
   border-color: var(--hairline-strong);
+  box-shadow: var(--shadow-card-hover);
 }
 
-/* High-Precision Form Inputs */
+/* Subtle Gradient Border Glow Utility */
+.card-glow {
+  position: relative;
+}
+.card-glow::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: calc(var(--radius-lg) + 1px);
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.4), rgba(6, 182, 212, 0.2), transparent 70%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Polished Form Inputs */
 .form-input {
   width: 100%;
-  padding: 0.7rem 0.9rem;
+  padding: 0.75rem 1rem;
   background: var(--bg-input);
-  border: var(--border-hairline);
-  border-radius: var(--radius-sharp);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-md);
   color: var(--text-primary);
   font-size: 0.875rem;
   font-family: var(--font-sans);
-  transition: border-color 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .form-input:focus {
   outline: none;
   border-color: var(--accent-primary);
+  background: rgba(14, 18, 28, 0.95);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
 }
 
 .form-input::placeholder {
   color: var(--text-muted);
 }
 
-/* Swiss Architectural Buttons */
+/* Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: 0.8125rem;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  padding: 0.7rem 1.25rem;
-  border-radius: var(--radius-sharp);
+  font-weight: 500;
+  font-size: 0.875rem;
+  letter-spacing: -0.01em;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-md);
   border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .btn-primary {
-  background: var(--accent-primary);
+  background: var(--accent-gradient);
   color: #ffffff;
-  border-color: var(--accent-primary);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.35), 0 0 20px -3px rgba(99, 102, 241, 0.2);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--accent-primary-hover);
-  border-color: var(--accent-primary-hover);
-}
-
-.btn-primary:active:not(:disabled) {
-  background: var(--accent-primary-active);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.5), 0 0 28px -2px rgba(99, 102, 241, 0.4);
+  filter: brightness(1.08);
 }
 
 .btn-secondary {
-  background: var(--bg-secondary);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
   color: var(--text-primary);
-  border: var(--border-hairline);
+  border: 1px solid var(--hairline-strong);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: var(--bg-surface-hover);
-  border-color: var(--hairline-strong);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
 }
 
 .btn-danger {
@@ -155,26 +206,28 @@ body {
 .btn-danger:hover:not(:disabled) {
   background: var(--status-danger);
   color: #ffffff;
+  box-shadow: 0 4px 14px rgba(244, 63, 94, 0.4);
 }
 
 .btn:disabled {
-  opacity: 0.4;
+  opacity: 0.45;
   cursor: not-allowed;
+  filter: grayscale(0.5);
 }
 
-/* Badges & Status Markers */
+/* Badges & Status Pills */
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.2rem 0.55rem;
-  border-radius: var(--radius-sharp);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  gap: 0.4rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
   border: 1px solid transparent;
+  transition: all 0.15s ease;
 }
 
 .badge-success {
@@ -196,21 +249,57 @@ body {
 }
 
 .badge-neutral {
-  background: var(--bg-secondary);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text-secondary);
-  border: var(--border-hairline);
+  border-color: var(--hairline-strong);
 }
 
-/* Typography Utilities */
+/* Typography & Subheadings */
 .font-mono {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 
-.subheading-swiss {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+.subheading-kicker {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--accent-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Smooth custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes floatSoft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
 }

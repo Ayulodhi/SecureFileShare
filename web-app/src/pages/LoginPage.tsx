@@ -6,7 +6,7 @@ import { hasUserKeys } from '../crypto/keyVault';
 import { showToast } from '../components/Toast';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
-import { Shield, Lock, User, AlertCircle, Key } from 'lucide-react';
+import { Shield, Lock, User, AlertCircle, Key, Sparkles, ArrowRight } from 'lucide-react';
 
 interface LoginPageProps {
   onNavigateToRegister: () => void;
@@ -78,52 +78,68 @@ export function LoginPage({ onNavigateToRegister }: LoginPageProps) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '2rem 1.5rem',
+        padding: '2.5rem 1.5rem',
         background: 'var(--bg-primary)',
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
-      <div style={{ width: '100%', maxWidth: '440px' }}>
-        {/* Swiss Brand Header */}
-        <div style={{ marginBottom: '2rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-            <div
-              style={{
-                width: '32px',
-                height: '32px',
-                background: 'var(--accent-primary)',
-                borderRadius: 'var(--radius-sharp)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Shield size={18} color="#ffffff" strokeWidth={2.5} />
-            </div>
-            <h1
-              style={{
-                fontSize: '1.25rem',
-                fontWeight: 700,
-                letterSpacing: '-0.02em',
-                color: 'var(--text-primary)',
-              }}
-            >
-              SecureFileShare
-            </h1>
-          </div>
-          <p
+      {/* Ambient background glow behind login card */}
+      <div
+        style={{
+          position: 'absolute',
+          width: '500px',
+          height: '500px',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      <div style={{ width: '100%', maxWidth: '440px', position: 'relative', zIndex: 1 }}>
+        {/* Brand Header */}
+        <div style={{ marginBottom: '2.25rem', textAlign: 'center' }}>
+          <div
             style={{
-              fontSize: '0.72rem',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              color: 'var(--text-muted)',
-              fontWeight: 600,
+              width: '48px',
+              height: '48px',
+              background: 'var(--accent-gradient)',
+              borderRadius: 'var(--radius-md)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1.25rem',
+              boxShadow: '0 8px 24px rgba(99, 102, 241, 0.4), 0 0 30px rgba(6, 182, 212, 0.2)',
             }}
           >
-            Zero-Knowledge Client Portal
+            <Shield size={26} color="#ffffff" strokeWidth={2.2} />
+          </div>
+          <h1
+            style={{
+              fontSize: '1.5rem',
+              fontWeight: 700,
+              letterSpacing: '-0.03em',
+              color: 'var(--text-primary)',
+              marginBottom: '0.35rem',
+            }}
+          >
+            Welcome to SecureShare
+          </h1>
+          <p
+            style={{
+              fontSize: '0.8125rem',
+              color: 'var(--text-muted)',
+              fontWeight: 500,
+            }}
+          >
+            Zero-knowledge, client-side encrypted workspace
           </p>
         </div>
 
-        <Card title="Sign In" subtitle="Session Authentication">
+        <Card title="Sign In" subtitle="Session Authentication" className="card-glow">
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             {error && (
               <div
@@ -131,15 +147,15 @@ export function LoginPage({ onNavigateToRegister }: LoginPageProps) {
                   background: 'var(--status-danger-bg)',
                   border: '1px solid var(--status-danger-border)',
                   color: 'var(--status-danger)',
-                  padding: '0.75rem 1rem',
-                  borderRadius: 'var(--radius-sharp)',
+                  padding: '0.85rem 1rem',
+                  borderRadius: 'var(--radius-md)',
                   fontSize: '0.8125rem',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.5rem',
+                  gap: '0.65rem',
                 }}
               >
-                <AlertCircle size={15} />
+                <AlertCircle size={16} style={{ flexShrink: 0 }} />
                 <span>{error}</span>
               </div>
             )}
@@ -150,9 +166,8 @@ export function LoginPage({ onNavigateToRegister }: LoginPageProps) {
                   display: 'block',
                   fontSize: '0.75rem',
                   fontWeight: 600,
-                  letterSpacing: '0.04em',
-                  textTransform: 'uppercase',
-                  marginBottom: '0.4rem',
+                  letterSpacing: '0.02em',
+                  marginBottom: '0.45rem',
                   color: 'var(--text-secondary)',
                 }}
               >
@@ -162,17 +177,17 @@ export function LoginPage({ onNavigateToRegister }: LoginPageProps) {
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="e.g. admin"
+                  placeholder="Enter your username or email"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  style={{ paddingLeft: '2.4rem' }}
+                  style={{ paddingLeft: '2.5rem' }}
                   autoComplete="username"
                 />
                 <User
-                  size={15}
+                  size={16}
                   style={{
                     position: 'absolute',
-                    left: '0.85rem',
+                    left: '0.9rem',
                     top: '50%',
                     transform: 'translateY(-50%)',
                     color: 'var(--text-muted)',
@@ -187,9 +202,8 @@ export function LoginPage({ onNavigateToRegister }: LoginPageProps) {
                   display: 'block',
                   fontSize: '0.75rem',
                   fontWeight: 600,
-                  letterSpacing: '0.04em',
-                  textTransform: 'uppercase',
-                  marginBottom: '0.4rem',
+                  letterSpacing: '0.02em',
+                  marginBottom: '0.45rem',
                   color: 'var(--text-secondary)',
                 }}
               >
@@ -202,14 +216,14 @@ export function LoginPage({ onNavigateToRegister }: LoginPageProps) {
                   placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  style={{ paddingLeft: '2.4rem' }}
+                  style={{ paddingLeft: '2.5rem' }}
                   autoComplete="current-password"
                 />
                 <Lock
-                  size={15}
+                  size={16}
                   style={{
                     position: 'absolute',
-                    left: '0.85rem',
+                    left: '0.9rem',
                     top: '50%',
                     transform: 'translateY(-50%)',
                     color: 'var(--text-muted)',
@@ -223,19 +237,18 @@ export function LoginPage({ onNavigateToRegister }: LoginPageProps) {
               variant="primary"
               loading={loading}
               icon={<Key size={15} />}
-              style={{ width: '100%', marginTop: '0.5rem' }}
+              style={{ width: '100%', marginTop: '0.5rem', padding: '0.75rem' }}
             >
               Sign In
             </Button>
 
             <div
               style={{
-                textAlign: 'left',
                 fontSize: '0.8125rem',
                 color: 'var(--text-secondary)',
                 marginTop: '0.5rem',
-                paddingTop: '1rem',
-                borderTop: 'var(--border-hairline)',
+                paddingTop: '1.25rem',
+                borderTop: '1px solid var(--hairline)',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
@@ -248,15 +261,21 @@ export function LoginPage({ onNavigateToRegister }: LoginPageProps) {
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: 'var(--accent-primary)',
+                  color: '#818cf8',
                   fontWeight: 600,
                   fontSize: '0.8125rem',
-                  letterSpacing: '0.02em',
                   cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
                   padding: 0,
+                  transition: 'color 0.15s ease',
                 }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#a5b4fc')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#818cf8')}
               >
-                Register Account →
+                <span>Register</span>
+                <ArrowRight size={13} />
               </button>
             </div>
           </form>

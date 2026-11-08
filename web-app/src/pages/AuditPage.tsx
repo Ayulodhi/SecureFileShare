@@ -4,7 +4,8 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Table, Column } from '../components/Table';
 import { showToast } from '../components/Toast';
-import { ShieldCheck, ShieldAlert, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { formatTimestamp, formatHash } from '../utils/formatters';
+import { ShieldCheck, ShieldAlert, RefreshCw, CheckCircle2, Sparkles, Hash, Link2 } from 'lucide-react';
 
 export function AuditPage() {
   const [entries, setEntries] = useState<AuditEntry[]>([]);
@@ -49,66 +50,103 @@ export function AuditPage() {
   const columns: Column<AuditEntry>[] = [
     {
       header: 'Seq #',
-      accessor: (e) => <span className="font-mono" style={{ color: 'var(--text-muted)' }}>#{e.id.toString().padStart(4, '0')}</span>,
-      width: '80px',
+      accessor: (e) => (
+        <span
+          className="font-mono"
+          style={{
+            color: 'var(--text-muted)',
+            fontSize: '0.8125rem',
+            background: 'rgba(255, 255, 255, 0.04)',
+            padding: '0.15rem 0.5rem',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--hairline)',
+          }}
+        >
+          #{e.id.toString().padStart(4, '0')}
+        </span>
+      ),
+      width: '90px',
     },
     {
       header: 'Timestamp',
       accessor: (e) => (
-        <span className="font-mono" style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
-          {new Date(e.timestamp).toISOString().replace('T', ' ').substring(0, 19)}
+        <span className="font-mono" style={{ color: 'var(--text-secondary)', fontSize: '0.775rem' }}>
+          {formatTimestamp(e.timestamp)}
         </span>
       ),
       width: '180px',
     },
     {
       header: 'Actor',
-      accessor: (e) => <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{e.actor}</span>,
-      width: '120px',
+      accessor: (e) => (
+        <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.875rem' }}>
+          {e.actor}
+        </span>
+      ),
+      width: '130px',
     },
     {
       header: 'Action',
-      accessor: (e) => (
-        <span
-          className="badge"
-          style={{
-            background:
-              e.action === 'UPLOAD'
-                ? 'var(--accent-tint)'
-                : e.action === 'DOWNLOAD'
+      accessor: (e) => {
+        const isUpload = e.action === 'UPLOAD';
+        const isDownload = e.action === 'DOWNLOAD';
+        return (
+          <span
+            className="badge"
+            style={{
+              background: isUpload
+                ? 'rgba(99, 102, 241, 0.15)'
+                : isDownload
                 ? 'var(--status-clean-bg)'
-                : 'var(--bg-secondary)',
-            color:
-              e.action === 'UPLOAD'
-                ? 'var(--accent-primary)'
-                : e.action === 'DOWNLOAD'
+                : 'rgba(255, 255, 255, 0.05)',
+              color: isUpload
+                ? '#818cf8'
+                : isDownload
                 ? 'var(--status-clean)'
                 : 'var(--text-secondary)',
-            borderColor:
-              e.action === 'UPLOAD'
-                ? 'var(--accent-primary)'
-                : e.action === 'DOWNLOAD'
+              borderColor: isUpload
+                ? 'rgba(99, 102, 241, 0.3)'
+                : isDownload
                 ? 'var(--status-clean-border)'
                 : 'var(--hairline)',
-          }}
-        >
-          {e.action}
-        </span>
-      ),
+              fontSize: '0.725rem',
+              fontWeight: 600,
+            }}
+          >
+            {e.action}
+          </span>
+        );
+      },
       width: '140px',
     },
     {
       header: 'Resource',
-      accessor: (e) => <span style={{ color: 'var(--text-primary)' }}>{e.file || '—'}</span>,
+      accessor: (e) => (
+        <span style={{ color: 'var(--text-primary)', fontWeight: 500, fontSize: '0.875rem' }}>
+          {e.file || '—'}
+        </span>
+      ),
     },
     {
       header: 'Hash Chain Proof (SHA-256)',
       accessor: (e) => (
-        <span className="font-mono" style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-          {e.hash ? e.hash.substring(0, 18) + '...' : 'GENESIS'}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <Link2 size={12} color="var(--accent-primary)" />
+          <span
+            className="font-mono"
+            style={{
+              fontSize: '0.75rem',
+              color: 'var(--text-muted)',
+              background: 'rgba(0, 0, 0, 0.25)',
+              padding: '0.15rem 0.45rem',
+              borderRadius: 'var(--radius-sm)',
+            }}
+          >
+            {e.hash ? formatHash(e.hash, 18) : 'GENESIS'}
+          </span>
+        </div>
       ),
-      width: '200px',
+      width: '210px',
     },
   ];
 
@@ -120,24 +158,25 @@ export function AuditPage() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-end',
-          paddingBottom: '1.25rem',
-          borderBottom: 'var(--border-hairline)',
+          paddingBottom: '1.5rem',
+          borderBottom: '1px solid var(--hairline)',
         }}
       >
         <div>
-          <div className="subheading-swiss" style={{ marginBottom: '0.35rem' }}>
+          <div className="subheading-kicker" style={{ marginBottom: '0.4rem' }}>
+            <Sparkles size={13} />
             Cryptographic Integrity Ledger
           </div>
-          <h2
+          <h1
             style={{
-              fontSize: '1.5rem',
+              fontSize: '1.75rem',
               fontWeight: 700,
-              letterSpacing: '-0.02em',
+              letterSpacing: '-0.03em',
               color: 'var(--text-primary)',
             }}
           >
             Audit Trail
-          </h2>
+          </h1>
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -153,7 +192,7 @@ export function AuditPage() {
             variant="primary"
             onClick={handleVerifyChain}
             loading={verifying}
-            icon={<ShieldCheck size={14} />}
+            icon={<ShieldCheck size={16} />}
           >
             Verify Hash Chain
           </Button>
@@ -164,50 +203,84 @@ export function AuditPage() {
       {verifyResult && (
         <div
           style={{
-            padding: '1rem 1.25rem',
-            background: verifyResult.valid ? 'var(--status-clean-bg)' : 'var(--status-danger-bg)',
-            border: `1px solid ${verifyResult.valid ? 'var(--status-clean-border)' : 'var(--status-danger-border)'}`,
-            borderRadius: 'var(--radius-sharp)',
+            padding: '1.25rem 1.5rem',
+            background: verifyResult.valid
+              ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(16, 185, 129, 0.05))'
+              : 'linear-gradient(135deg, rgba(244, 63, 94, 0.12), rgba(244, 63, 94, 0.05))',
+            border: `1px solid ${
+              verifyResult.valid ? 'rgba(16, 185, 129, 0.35)' : 'rgba(244, 63, 94, 0.35)'
+            }`,
+            borderRadius: 'var(--radius-lg)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            boxShadow: verifyResult.valid
+              ? '0 0 25px rgba(16, 185, 129, 0.15)'
+              : '0 0 25px rgba(244, 63, 94, 0.15)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            {verifyResult.valid ? (
-              <CheckCircle2 size={18} color="var(--status-clean)" />
-            ) : (
-              <ShieldAlert size={18} color="var(--status-danger)" />
-            )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: 'var(--radius-md)',
+                background: verifyResult.valid
+                  ? 'rgba(16, 185, 129, 0.2)'
+                  : 'rgba(244, 63, 94, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {verifyResult.valid ? (
+                <CheckCircle2 size={22} color="var(--status-clean)" />
+              ) : (
+                <ShieldAlert size={22} color="var(--status-danger)" />
+              )}
+            </div>
             <div>
               <div
                 style={{
-                  fontSize: '0.85rem',
+                  fontSize: '0.95rem',
                   fontWeight: 700,
-                  letterSpacing: '0.02em',
+                  letterSpacing: '-0.01em',
                   color: verifyResult.valid ? 'var(--status-clean)' : 'var(--status-danger)',
                 }}
               >
                 {verifyResult.valid ? 'IMMUTABLE HASH CHAIN VERIFIED' : 'TAMPER DETECTED IN AUDIT LEDGER'}
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+              <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
                 {verifyResult.message}
               </div>
             </div>
           </div>
-          <span className="badge badge-neutral font-mono">
+          <span
+            className="badge font-mono"
+            style={{
+              background: 'rgba(255, 255, 255, 0.06)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--hairline-strong)',
+              fontSize: '0.75rem',
+              padding: '0.3rem 0.75rem',
+            }}
+          >
             {verifyResult.checkedCount} ENTRIES CHECKED
           </span>
         </div>
       )}
 
       {/* Ledger Table */}
-      <Card title="Ledger Entries" subtitle="Append-only hash chain linking previous hashes">
+      <Card
+        title="Ledger Entries"
+        subtitle="Append-only cryptographic hash chain linking blocks"
+        className="card-glow"
+      >
         <Table
           columns={columns}
           data={entries}
           loading={loading}
-          emptyMessage="No audit records registered."
+          emptyMessage="No audit records registered in the ledger."
         />
       </Card>
     </div>

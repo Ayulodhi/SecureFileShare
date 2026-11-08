@@ -4,7 +4,8 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Table, Column } from '../components/Table';
 import { showToast } from '../components/Toast';
-import { Copy, Check, Trash2, RefreshCw } from 'lucide-react';
+import { formatTimestamp, getStatusBadgeInfo } from '../utils/formatters';
+import { Copy, Check, Trash2, RefreshCw, Share2, Sparkles, Clock, Link } from 'lucide-react';
 
 export function SharesPage() {
   const [shares, setShares] = useState<ShareRecord[]>([]);
@@ -49,10 +50,30 @@ export function SharesPage() {
     {
       header: 'File Name',
       accessor: (s) => (
-        <div>
-          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{s.fileName}</span>
-          <div className="font-mono" style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-            TOKEN: {s.id}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          <div
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: 'var(--radius-sm)',
+              background: 'rgba(99, 102, 241, 0.12)',
+              border: '1px solid rgba(99, 102, 241, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#818cf8',
+              flexShrink: 0,
+            }}
+          >
+            <Link size={16} />
+          </div>
+          <div>
+            <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>
+              {s.fileName}
+            </span>
+            <div className="font-mono" style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>
+              TOKEN: {s.id}
+            </div>
           </div>
         </div>
       ),
@@ -60,30 +81,48 @@ export function SharesPage() {
     {
       header: 'Recipient',
       accessor: (s) => (
-        <span className="badge badge-neutral font-mono">{s.recipientUsername || 'ANY'}</span>
+        <span
+          className="badge badge-neutral font-mono"
+          style={{ fontSize: '0.75rem', padding: '0.25rem 0.65rem' }}
+        >
+          {s.recipientUsername || 'ANY'}
+        </span>
       ),
-      width: '130px',
+      width: '140px',
     },
     {
       header: 'Status',
       accessor: (s) => {
-        const isActive = s.status === 'ACTIVE';
+        const badge = getStatusBadgeInfo(s.status);
+        const isActive = badge.variant === 'success';
         return (
-          <span className={`badge ${isActive ? 'badge-success' : 'badge-danger'}`}>
-            {s.status}
+          <span className={`badge badge-${badge.variant}`}>
+            <span
+              style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                background: isActive ? 'var(--status-clean)' : 'var(--status-danger)',
+                display: 'inline-block',
+              }}
+            />
+            <span>{badge.label}</span>
           </span>
         );
       },
-      width: '110px',
+      width: '130px',
     },
     {
       header: 'Expires At',
       accessor: (s) => (
-        <span className="font-mono" style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
-          {new Date(s.expiresAt).toISOString().replace('T', ' ').substring(0, 19)}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)' }}>
+          <Clock size={12} />
+          <span className="font-mono" style={{ fontSize: '0.775rem' }}>
+            {formatTimestamp(s.expiresAt)}
+          </span>
+        </div>
       ),
-      width: '180px',
+      width: '190px',
     },
     {
       header: 'Actions',
@@ -93,7 +132,7 @@ export function SharesPage() {
             variant="secondary"
             onClick={() => handleCopyLink(s)}
             icon={copiedId === s.id ? <Check size={13} /> : <Copy size={13} />}
-            style={{ padding: '0.45rem 0.75rem', fontSize: '0.75rem' }}
+            style={{ padding: '0.45rem 0.85rem', fontSize: '0.785rem' }}
           >
             {copiedId === s.id ? 'Copied' : 'Copy'}
           </Button>
@@ -102,14 +141,14 @@ export function SharesPage() {
               variant="danger"
               onClick={() => handleRevoke(s.id)}
               icon={<Trash2 size={13} />}
-              style={{ padding: '0.45rem 0.75rem', fontSize: '0.75rem' }}
+              style={{ padding: '0.45rem 0.85rem', fontSize: '0.785rem' }}
             >
               Revoke
             </Button>
           )}
         </div>
       ),
-      width: '180px',
+      width: '190px',
     },
   ];
 
@@ -121,24 +160,25 @@ export function SharesPage() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-end',
-          paddingBottom: '1.25rem',
-          borderBottom: 'var(--border-hairline)',
+          paddingBottom: '1.5rem',
+          borderBottom: '1px solid var(--hairline)',
         }}
       >
         <div>
-          <div className="subheading-swiss" style={{ marginBottom: '0.35rem' }}>
+          <div className="subheading-kicker" style={{ marginBottom: '0.4rem' }}>
+            <Sparkles size={13} />
             Access Delegation Control
           </div>
-          <h2
+          <h1
             style={{
-              fontSize: '1.5rem',
+              fontSize: '1.75rem',
               fontWeight: 700,
-              letterSpacing: '-0.02em',
+              letterSpacing: '-0.03em',
               color: 'var(--text-primary)',
             }}
           >
             Share Links
-          </h2>
+          </h1>
         </div>
 
         <Button
@@ -151,12 +191,16 @@ export function SharesPage() {
         </Button>
       </div>
 
-      <Card title="Active Authorizations" subtitle="Time-limited HMAC token grants">
+      <Card
+        title="Active Authorizations"
+        subtitle="Time-limited HMAC token grants"
+        className="card-glow"
+      >
         <Table
           columns={columns}
           data={shares}
           loading={loading}
-          emptyMessage="No active share links recorded."
+          emptyMessage="No active share links recorded. Create one by clicking 'Share' on any file."
         />
       </Card>
     </div>

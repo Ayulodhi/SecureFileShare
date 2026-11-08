@@ -31,16 +31,15 @@ export function Button({
             width: '14px',
             height: '14px',
             border: '2px solid rgba(255,255,255,0.3)',
-            borderTopColor: '#fff',
+            borderTopColor: '#ffffff',
             borderRadius: '50%',
             animation: 'spin 0.6s linear infinite',
-            marginRight: '0.4rem',
           }}
         />
       ) : (
         icon && <span style={{ display: 'inline-flex', alignItems: 'center' }}>{icon}</span>
       )}
-      {children}
+      <span>{children}</span>
     </button>
   );
 }

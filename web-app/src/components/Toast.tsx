@@ -48,49 +48,53 @@ export function ToastContainer() {
         zIndex: 9999,
         display: 'flex',
         flexDirection: 'column',
-        gap: '0.5rem',
-        maxWidth: '380px',
+        gap: '0.65rem',
+        maxWidth: '400px',
         width: '100%',
       }}
     >
       {toasts.map((t) => {
-        const borderColor =
-          t.type === 'success'
-            ? 'var(--status-clean-border)'
-            : t.type === 'error'
-            ? 'var(--status-danger-border)'
-            : 'var(--accent-primary)';
+        const isSuccess = t.type === 'success';
+        const isError = t.type === 'error';
 
-        const Icon =
-          t.type === 'success' ? CheckCircle2 : t.type === 'error' ? AlertCircle : Info;
+        const borderColor = isSuccess
+          ? 'var(--status-clean-border)'
+          : isError
+          ? 'var(--status-danger-border)'
+          : 'rgba(99, 102, 241, 0.4)';
 
-        const iconColor =
-          t.type === 'success'
-            ? 'var(--status-clean)'
-            : t.type === 'error'
-            ? 'var(--status-danger)'
-            : 'var(--accent-primary)';
+        const accentColor = isSuccess
+          ? 'var(--status-clean)'
+          : isError
+          ? 'var(--status-danger)'
+          : 'var(--accent-primary)';
+
+        const Icon = isSuccess ? CheckCircle2 : isError ? AlertCircle : Info;
 
         return (
           <div
             key={t.id}
             style={{
-              background: 'var(--bg-surface)',
+              background: 'rgba(16, 21, 35, 0.92)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
               color: 'var(--text-primary)',
               border: `1px solid ${borderColor}`,
-              borderLeft: `3px solid ${borderColor}`,
-              padding: '0.85rem 1rem',
-              borderRadius: 'var(--radius-sharp)',
+              borderLeft: `4px solid ${accentColor}`,
+              padding: '0.9rem 1.15rem',
+              borderRadius: 'var(--radius-md)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: '0.75rem',
-              fontSize: '0.8125rem',
+              gap: '0.85rem',
+              fontSize: '0.875rem',
+              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 15px -3px rgba(0, 0, 0, 0.3)',
+              animation: 'floatSoft 3s ease-in-out infinite',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-              <Icon size={16} color={iconColor} />
-              <span>{t.message}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <Icon size={18} color={accentColor} style={{ flexShrink: 0 }} />
+              <span style={{ lineHeight: 1.4, fontWeight: 500 }}>{t.message}</span>
             </div>
             <button
               onClick={() => removeToast(t.id)}
@@ -100,10 +104,18 @@ export function ToastContainer() {
                 color: 'var(--text-muted)',
                 cursor: 'pointer',
                 display: 'flex',
-                padding: '0.2rem',
+                padding: '0.25rem',
+                borderRadius: 'var(--radius-sm)',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#ffffff';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--text-muted)';
               }}
             >
-              <X size={14} />
+              <X size={15} />
             </button>
           </div>
         );

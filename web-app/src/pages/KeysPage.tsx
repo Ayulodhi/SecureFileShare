@@ -11,7 +11,7 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
 import { showToast } from '../components/Toast';
-import { Key, Shield, Download, Upload, Copy, Check, Lock, AlertTriangle } from 'lucide-react';
+import { Key, Shield, Download, Upload, Copy, Check, Lock, AlertTriangle, Sparkles, CheckCircle2 } from 'lucide-react';
 
 export function KeysPage() {
   const { user, refreshKeyStatus } = useAuth();
@@ -150,24 +150,25 @@ export function KeysPage() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-end',
-          paddingBottom: '1.25rem',
-          borderBottom: 'var(--border-hairline)',
+          paddingBottom: '1.5rem',
+          borderBottom: '1px solid var(--hairline)',
         }}
       >
         <div>
-          <div className="subheading-swiss" style={{ marginBottom: '0.35rem' }}>
+          <div className="subheading-kicker" style={{ marginBottom: '0.4rem' }}>
+            <Sparkles size={13} />
             Zero-Knowledge Key Architecture
           </div>
-          <h2
+          <h1
             style={{
-              fontSize: '1.5rem',
+              fontSize: '1.75rem',
               fontWeight: 700,
-              letterSpacing: '-0.02em',
+              letterSpacing: '-0.03em',
               color: 'var(--text-primary)',
             }}
           >
             Cryptographic Vault
-          </h2>
+          </h1>
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -193,30 +194,43 @@ export function KeysPage() {
       {!keys && !loading && (
         <div
           style={{
-            padding: '1.25rem',
-            borderRadius: 'var(--radius-sharp)',
-            background: 'var(--status-warn-bg)',
-            border: '1px solid var(--status-warn-border)',
+            padding: '1.5rem',
+            borderRadius: 'var(--radius-lg)',
+            background: 'rgba(245, 158, 11, 0.08)',
+            border: '1px solid rgba(245, 158, 11, 0.3)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            gap: '1.5rem',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <AlertTriangle size={20} color="var(--status-warn)" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div
+              style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: 'var(--radius-md)',
+                background: 'rgba(245, 158, 11, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <AlertTriangle size={22} color="var(--status-warn)" />
+            </div>
             <div>
               <div
                 style={{
                   fontWeight: 700,
-                  fontSize: '0.85rem',
-                  letterSpacing: '0.02em',
-                  textTransform: 'uppercase',
+                  fontSize: '0.95rem',
+                  letterSpacing: '-0.01em',
                   color: 'var(--status-warn)',
                 }}
               >
                 Zero-Knowledge Keys Not Found in Browser
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+              <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
                 Files cannot be encrypted or decrypted on this device until keys are generated or restored.
               </div>
             </div>
@@ -229,18 +243,22 @@ export function KeysPage() {
 
       {/* Active Key Details Card */}
       {keys && (
-        <Card title="Active Cryptographic Identity" subtitle="IndexedDB Key Store: sfs_vault">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <Card
+          title="Active Cryptographic Identity"
+          subtitle="IndexedDB Local Store: sfs_vault"
+          className="card-glow"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+            {/* Fingerprint Input Row */}
             <div>
               <label
                 style={{
                   display: 'block',
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: 'var(--text-muted)',
-                  marginBottom: '0.4rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.02em',
+                  marginBottom: '0.45rem',
+                  color: 'var(--text-secondary)',
                 }}
               >
                 Public Key Fingerprint (SHA-256)
@@ -251,33 +269,70 @@ export function KeysPage() {
                   readOnly
                   className="form-input font-mono"
                   value={keys.fingerprint}
-                  style={{ fontSize: '0.8rem', background: 'var(--bg-input)' }}
+                  style={{ fontSize: '0.8125rem', background: 'rgba(0, 0, 0, 0.35)' }}
                 />
                 <Button
                   variant="secondary"
                   onClick={handleCopyFingerprint}
-                  icon={copiedFingerprint ? <Check size={13} /> : <Copy size={13} />}
+                  icon={copiedFingerprint ? <Check size={14} /> : <Copy size={14} />}
                 >
                   {copiedFingerprint ? 'Copied' : 'Copy'}
                 </Button>
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+            {/* Cryptographic Pair Cards */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                gap: '1.25rem',
+              }}
+            >
               <div
                 style={{
-                  background: 'var(--bg-secondary)',
-                  padding: '1.25rem',
-                  borderRadius: 'var(--radius-sharp)',
-                  border: 'var(--border-hairline)',
+                  background: 'rgba(255, 255, 255, 0.025)',
+                  padding: '1.5rem',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--hairline)',
+                  boxShadow: 'var(--shadow-sm)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                  <Shield size={16} color="var(--accent-primary)" />
-                  <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>RSA-OAEP 4096-bit</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '1rem' }}>
+                  <div
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'rgba(99, 102, 241, 0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#818cf8',
+                    }}
+                  >
+                    <Shield size={18} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                      RSA-OAEP 4096-bit
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Asymmetric Key Wrapping</div>
+                  </div>
                 </div>
-                <div className="font-mono" style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  <div>USAGE: Key Encapsulation (DEK Wrapping)</div>
+                <div
+                  className="font-mono"
+                  style={{
+                    fontSize: '0.75rem',
+                    color: 'var(--text-secondary)',
+                    lineHeight: 1.8,
+                    background: 'rgba(0, 0, 0, 0.2)',
+                    padding: '0.85rem 1rem',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--hairline)',
+                  }}
+                >
+                  <div>USAGE: DEK Encapsulation (OAEP)</div>
                   <div>DIGEST: SHA-256</div>
                   <div>EXPONENT: 65537 (0x10001)</div>
                 </div>
@@ -285,17 +340,47 @@ export function KeysPage() {
 
               <div
                 style={{
-                  background: 'var(--bg-secondary)',
-                  padding: '1.25rem',
-                  borderRadius: 'var(--radius-sharp)',
-                  border: 'var(--border-hairline)',
+                  background: 'rgba(255, 255, 255, 0.025)',
+                  padding: '1.5rem',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--hairline)',
+                  boxShadow: 'var(--shadow-sm)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                  <Key size={16} color="var(--accent-primary)" />
-                  <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>ECDSA P-256</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '1rem' }}>
+                  <div
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'rgba(6, 182, 212, 0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#06b6d4',
+                    }}
+                  >
+                    <Key size={18} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                      ECDSA P-256
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Digital Signature Verification</div>
+                  </div>
                 </div>
-                <div className="font-mono" style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                <div
+                  className="font-mono"
+                  style={{
+                    fontSize: '0.75rem',
+                    color: 'var(--text-secondary)',
+                    lineHeight: 1.8,
+                    background: 'rgba(0, 0, 0, 0.2)',
+                    padding: '0.85rem 1rem',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--hairline)',
+                  }}
+                >
                   <div>USAGE: Digital Signature Verification</div>
                   <div>CURVE: NIST P-256 (secp256r1)</div>
                   <div>STORAGE: Non-extractable CryptoKey</div>
@@ -303,8 +388,15 @@ export function KeysPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-start', paddingTop: '0.75rem', borderTop: 'var(--border-hairline)' }}>
-              <Button variant="danger" onClick={handleRegenerateKeys} icon={<AlertTriangle size={13} />}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-start',
+                paddingTop: '1rem',
+                borderTop: '1px solid var(--hairline)',
+              }}
+            >
+              <Button variant="danger" onClick={handleRegenerateKeys} icon={<AlertTriangle size={14} />}>
                 Regenerate Key Pair
               </Button>
             </div>
@@ -316,7 +408,7 @@ export function KeysPage() {
       {isExportModalOpen && (
         <Modal title="Export Key Backup" onClose={() => setIsExportModalOpen(false)}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
               Your private keys will be encrypted client-side with <strong>PBKDF2 (100,000 iterations)</strong> + <strong>AES-256-GCM</strong> using your passphrase before export.
             </p>
 
@@ -324,12 +416,11 @@ export function KeysPage() {
               <label
                 style={{
                   display: 'block',
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: 'var(--text-muted)',
-                  marginBottom: '0.4rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.02em',
+                  marginBottom: '0.45rem',
+                  color: 'var(--text-secondary)',
                 }}
               >
                 Passphrase for Backup
@@ -341,13 +432,13 @@ export function KeysPage() {
                   placeholder="Enter strong passphrase"
                   value={exportPassphrase}
                   onChange={(e) => setExportPassphrase(e.target.value)}
-                  style={{ paddingLeft: '2.4rem' }}
+                  style={{ paddingLeft: '2.5rem' }}
                 />
                 <Lock
-                  size={15}
+                  size={16}
                   style={{
                     position: 'absolute',
-                    left: '0.85rem',
+                    left: '0.9rem',
                     top: '50%',
                     transform: 'translateY(-50%)',
                     color: 'var(--text-muted)',
@@ -364,7 +455,7 @@ export function KeysPage() {
                 variant="primary"
                 onClick={handleExportBackup}
                 loading={exportLoading}
-                icon={<Download size={13} />}
+                icon={<Download size={14} />}
               >
                 Download Encrypted JSON
               </Button>
@@ -377,7 +468,7 @@ export function KeysPage() {
       {isImportModalOpen && (
         <Modal title="Restore Key Backup" onClose={() => setIsImportModalOpen(false)}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
               Paste your previously exported encrypted backup JSON to restore your private keys into this browser.
             </p>
 
@@ -385,12 +476,11 @@ export function KeysPage() {
               <label
                 style={{
                   display: 'block',
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: 'var(--text-muted)',
-                  marginBottom: '0.4rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.02em',
+                  marginBottom: '0.45rem',
+                  color: 'var(--text-secondary)',
                 }}
               >
                 Backup JSON
@@ -401,7 +491,7 @@ export function KeysPage() {
                 placeholder='{"username": "...", "salt": "...", "ciphertext": "..."}'
                 value={importJson}
                 onChange={(e) => setImportJson(e.target.value)}
-                style={{ fontSize: '0.75rem', resize: 'vertical' }}
+                style={{ fontSize: '0.775rem', resize: 'vertical' }}
               />
             </div>
 
@@ -409,12 +499,11 @@ export function KeysPage() {
               <label
                 style={{
                   display: 'block',
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: 'var(--text-muted)',
-                  marginBottom: '0.4rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.02em',
+                  marginBottom: '0.45rem',
+                  color: 'var(--text-secondary)',
                 }}
               >
                 Decryption Passphrase
@@ -426,13 +515,13 @@ export function KeysPage() {
                   placeholder="Enter the passphrase used during export"
                   value={importPassphrase}
                   onChange={(e) => setImportPassphrase(e.target.value)}
-                  style={{ paddingLeft: '2.4rem' }}
+                  style={{ paddingLeft: '2.5rem' }}
                 />
                 <Lock
-                  size={15}
+                  size={16}
                   style={{
                     position: 'absolute',
-                    left: '0.85rem',
+                    left: '0.9rem',
                     top: '50%',
                     transform: 'translateY(-50%)',
                     color: 'var(--text-muted)',
@@ -449,7 +538,7 @@ export function KeysPage() {
                 variant="primary"
                 onClick={handleImportBackup}
                 loading={importLoading}
-                icon={<Upload size={13} />}
+                icon={<Upload size={14} />}
               >
                 Restore Keys
               </Button>
