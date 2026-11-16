@@ -37,6 +37,8 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+    clean-disabled: false
+    clean-on-validation-error: true
     locations: classpath:db/migration
 
 # Actuator Health endpoint configuration
@@ -48,3 +50,9 @@ management:
   endpoint:
     health:
       show-details: when_authorized
+
+# Security JWT configuration
+security:
+  jwt:
+    secret: ${JWT_SECRET:super_secret_test_jwt_key_share_service_2026_at_least_32_chars!}
+
