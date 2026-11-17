@@ -21,6 +21,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Service managing append-only hash-chained audit logs and verification.
@@ -34,6 +35,7 @@ public class AuditService {
     private static final String GENESIS_PREV_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
 
     private final AuditRepository auditRepository;
+    private final ReentrantLock lock = new ReentrantLock();
 
     public AuditService(AuditRepository auditRepository) {
         this.auditRepository = auditRepository;
@@ -127,22 +129,27 @@ public class AuditService {
      */
     @Transactional
     public AuditEntryDto logEvent(LogEventRequest request) {
-        Optional<AuditRecord> lastRecord = auditRepository.findFirstByOrderByIdDesc();
-        String previousHash = lastRecord.map(AuditRecord::getHash).orElse(GENESIS_PREV_HASH);
+        lock.lock();
+        try {
+            Optional<AuditRecord> lastRecord = auditRepository.findFirstByOrderByIdDesc();
+            String previousHash = lastRecord.map(AuditRecord::getHash).orElse(GENESIS_PREV_HASH);
 
-        Instant timestamp = Instant.now().truncatedTo(ChronoUnit.MILLIS);
-        String actor = request.getActor();
-        String action = request.getAction();
-        String fileName = request.getFileName();
+            Instant timestamp = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+            String actor = request.getActor();
+            String action = request.getAction();
+            String fileName = request.getFileName();
 
-        int version = 2;
-        String hash = computeEntryHash(previousHash, timestamp, actor, action, fileName, version);
+            int version = 2;
+            String hash = computeEntryHash(previousHash, timestamp, actor, action, fileName, version);
 
-        AuditRecord record = new AuditRecord(timestamp, actor, action, fileName, hash, previousHash, version);
-        AuditRecord saved = auditRepository.save(record);
+            AuditRecord record = new AuditRecord(timestamp, actor, action, fileName, hash, previousHash, version);
+            AuditRecord saved = auditRepository.save(record);
 
-        log.info("Logged audit event #{}: {} by {} on {}", saved.getId(), action, actor, fileName);
-        return AuditEntryDto.fromEntity(saved);
+            log.info("Logged audit event #{}: {} by {} on {}", saved.getId(), action, actor, fileName);
+            return AuditEntryDto.fromEntity(saved);
+        } finally {
+            lock.unlock();
+        }
     }
 
     private String computeEntryHash(String previousHash, Instant timestamp, String actor, String action, String fileName, int version) {
