@@ -230,8 +230,8 @@ public class FileService {
 
         if (!isOwner && !hasValidShare) {
             log.warn("Access denied: user {} attempted to retrieve file {} owned by {}", callerId, fileId, record.getOwnerId());
-            throw new ApiException(HttpStatus.FORBIDDEN,
-                    "Access denied: caller is neither file owner nor authorized recipient");
+            throw new ApiException(HttpStatus.NOT_FOUND,
+                    "File not found with ID: " + fileId);
         }
 
         // Fetch the caller's specific wrapped AES key

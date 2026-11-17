@@ -24,6 +24,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      */
     Optional<User> findByUsername(String username);
 
+    Optional<User> findByFriendCode(String friendCode);
+
     /**
      * Checks if a user already exists with the given username.
      *

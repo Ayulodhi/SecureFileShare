@@ -6,6 +6,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { FilesPage } from './pages/FilesPage';
 import { UploadPage } from './pages/UploadPage';
 import { SharesPage } from './pages/SharesPage';
+import { FriendsPage } from './pages/FriendsPage';
 import { AuditPage } from './pages/AuditPage';
 import { KeysPage } from './pages/KeysPage';
 import { ShareAccessPage } from './pages/ShareAccessPage';
@@ -60,6 +61,7 @@ function AppContent() {
         <UploadPage onUploadSuccess={() => setCurrentTab('files')} />
       )}
       {currentTab === 'shares' && <SharesPage />}
+      {currentTab === 'friends' && <FriendsPage />}
       {currentTab === 'audit' && <AuditPage />}
       {currentTab === 'keys' && <KeysPage />}
     </Layout>

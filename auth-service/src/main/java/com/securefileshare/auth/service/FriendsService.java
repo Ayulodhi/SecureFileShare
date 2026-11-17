@@ -1,0 +1,139 @@
+package com.securefileshare.auth.service;
+
+import com.securefileshare.common.exception.ApiException;
+import com.securefileshare.auth.entity.*;
+import com.securefileshare.auth.repository.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * Service managing friend requests, friendships, and invite links.
+ * WHAT: Implements friend requests, state transitions, blocking, un friending, and secure invite code generation.
+ * WHY: Powers the social graph and direct recipient sharing capabilities.
+ */
+@Service
+public class FriendsService {
+
+    private static final Logger log = LoggerFactory.getLogger(FriendsService.class);
+    private static final long MAX_PENDING_REQUESTS = 20;
+
+    private final UserRepository userRepository;
+    private final FriendRequestRepository friendRequestRepository;
+    private final FriendshipRepository friendshipRepository;
+    private final InviteRepository inviteRepository;
+
+    public FriendsService(UserRepository userRepository,
+                          FriendRequestRepository friendRequestRepository,
+                          FriendshipRepository friendshipRepository,
+                          InviteRepository inviteRepository) {
+        this.userRepository = userRepository;
+        this.friendRequestRepository = friendRequestRepository;
+        this.friendshipRepository = friendshipRepository;
+        this.inviteRepository = inviteRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public User findByFriendCode(String friendCode) {
+        return userRepository.findByFriendCode(friendCode)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found with friend code: " + friendCode));
+    }
+
+    @Transactional
+    public void sendFriendRequest(UUID requesterId, String friendCode) {
+        User requester = userRepository.findById(requesterId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Requester not found"));
+        User addressee = userRepository.findByFriendCode(friendCode)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found with friend code: " + friendCode));
+
+        if (requester.getId().equals(addressee.getId())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Cannot send friend request to yourself");
+        }
+
+        // Check if addressee has blocked requester -> drop silently per rule 5
+        Optional<FriendRequest> reverseBlock = friendRequestRepository.findByRequesterAndAddressee(addressee, requester);
+        if (reverseBlock.isPresent() && reverseBlock.get().getStatus() == RequestStatus.BLOCKED) {
+            log.info("Blocked user {} attempted to send request to {}", requesterId, addressee.getId());
+            return; // Silent drop
+        }
+
+        // Check pending outgoing limit (max 20)
+        long pendingCount = friendRequestRepository.countByRequesterAndStatus(requester, RequestStatus.PENDING);
+        if (pendingCount >= MAX_PENDING_REQUESTS) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Maximum limit of 20 pending friend requests reached");
+        }
+
+        // Check if a request already exists between them
+        Optional<FriendRequest> existing = friendRequestRepository.findByRequesterAndAddressee(requester, addressee);
+        Optional<FriendRequest> reverseExisting = friendRequestRepository.findByRequesterAndAddressee(addressee, requester);
+
+        if (reverseExisting.isPresent() && reverseExisting.get().getStatus() == RequestStatus.PENDING) {
+            // Auto-accept if both sent requests to each other
+            reverseExisting.get().setStatus(RequestStatus.ACCEPTED);
+            friendRequestRepository.save(reverseExisting.get());
+            friendshipRepository.save(new Friendship(requester, addressee));
+            log.info("Auto-accepted reciprocal friend request between {} and {}", requesterId, addressee.getId());
+            return;
+        }
+
+        if (existing.isPresent()) {
+            FriendRequest req = existing.get();
+            if (req.getStatus() == RequestStatus.ACCEPTED) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Already friends");
+            }
+            if (req.getStatus() == RequestStatus.PENDING) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Friend request already pending");
+            }
+            req.setStatus(RequestStatus.PENDING);
+            friendRequestRepository.save(req);
+        } else {
+            friendRequestRepository.save(new FriendRequest(requester, addressee, RequestStatus.PENDING));
+        }
+        log.info("Friend request sent from {} to {}", requesterId, addressee.getId());
+    }
+
+    @Transactional
+    public void acceptFriendRequest(UUID userId, UUID requestId) {
+        FriendRequest request = friendRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Friend request not found"));
+
+        if (!request.getAddressee().getId().equals(userId)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Not authorized to accept this request");
+        }
+
+        if (request.getStatus() != RequestStatus.PENDING) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Friend request is not pending");
+        }
+
+        request.setStatus(RequestStatus.ACCEPTED);
+        friendRequestRepository.save(request);
+
+        // Save canonical friendship
+        friendshipRepository.save(new Friendship(request.getRequester(), request.getAddressee()));
+        log.info("User {} accepted friend request from {}", userId, request.getRequester().getId());
+    }
+
+    @Transactional
+    public void unfriend(UUID userId, UUID friendId) {
+        User user = userRepository.findById(userId).orElseThrow();
+        User friend = userRepository.findById(friendId).orElseThrow();
+
+        Optional<Friendship> friendship = friendshipRepository.findCanonical(user, friend);
+        if (friendship.isPresent()) {
+            friendshipRepository.delete(friendship.get());
+        }
+
+        // Also update any friend request records between them
+        friendRequestRepository.findByRequesterAndAddressee(user, friend).ifPresent(friendRequestRepository::delete);
+        friendRequestRepository.findByRequesterAndAddressee(friend, user).ifPresent(friendRequestRepository::delete);
+
+        log.info("User {} unfriended {}", userId, friendId);
+    }
+}
