@@ -46,7 +46,7 @@ public class StageDInviteConcurrencyTest {
     void setUp() {
         inviteRepository.deleteAll();
         userRepository.deleteAll();
-        owner = userRepository.save(new User("owner", "owner@test.com", "hash", Role.ROLE_SENDER_RECIPIENT));
+        owner = userRepository.save(new User("owner", "owner@test.com", "hash", Role.SENDER_RECIPIENT));
     }
 
     @Test

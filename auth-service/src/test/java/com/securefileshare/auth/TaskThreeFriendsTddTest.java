@@ -48,8 +48,8 @@ public class TaskThreeFriendsTddTest {
         friendRequestRepository.deleteAll();
         userRepository.deleteAll();
 
-        alice = userRepository.save(new User("alice", "alice@test.com", "hash", Role.ROLE_SENDER_RECIPIENT));
-        bob = userRepository.save(new User("bob", "bob@test.com", "hash", Role.ROLE_SENDER_RECIPIENT));
+        alice = userRepository.save(new User("alice", "alice@test.com", "hash", Role.SENDER_RECIPIENT));
+        bob = userRepository.save(new User("bob", "bob@test.com", "hash", Role.SENDER_RECIPIENT));
     }
 
     @Test
