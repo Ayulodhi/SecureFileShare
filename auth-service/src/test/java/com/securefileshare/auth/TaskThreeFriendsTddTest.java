@@ -29,6 +29,7 @@ public class TaskThreeFriendsTddTest {
         registry.add("spring.datasource.url", () -> "jdbc:postgresql://" + host + ":" + port + "/sfs_auth");
         registry.add("spring.datasource.username", () -> "sfs_admin");
         registry.add("spring.datasource.password", () -> "sfs_secure_pass_2026");
+        registry.add("security.jwt.secret", () -> "super_secret_test_jwt_key_auth_service_2026_at_least_32_chars!");
     }
 
     @Autowired
