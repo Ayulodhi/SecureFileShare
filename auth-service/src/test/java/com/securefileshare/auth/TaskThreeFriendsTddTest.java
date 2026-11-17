@@ -30,6 +30,9 @@ public class TaskThreeFriendsTddTest {
         registry.add("spring.datasource.username", () -> "sfs_admin");
         registry.add("spring.datasource.password", () -> "sfs_secure_pass_2026");
         registry.add("security.jwt.secret", () -> "super_secret_test_jwt_key_auth_service_2026_at_least_32_chars!");
+        registry.add("security.admin.initial-username", () -> "admin");
+        registry.add("security.admin.initial-email", () -> "admin@test.com");
+        registry.add("security.admin.initial-password", () -> "AdminSecurePass2026!");
     }
 
     @Autowired
