@@ -126,8 +126,8 @@ public class AuditService {
      * Appends a new audit event to the hash chain.
      */
     @Transactional
-    public synchronized AuditEntryDto logEvent(LogEventRequest request) {
-        Optional<AuditRecord> lastRecord = auditRepository.findTopByOrderByIdDesc();
+    public AuditEntryDto logEvent(LogEventRequest request) {
+        Optional<AuditRecord> lastRecord = auditRepository.findFirstByOrderByIdDesc();
         String previousHash = lastRecord.map(AuditRecord::getHash).orElse(GENESIS_PREV_HASH);
 
         Instant timestamp = Instant.now().truncatedTo(ChronoUnit.MILLIS);
