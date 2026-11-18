@@ -19,10 +19,7 @@ public abstract class BaseIntegrationTest {
             .withPassword("sfs_secure_pass_2026");
 
     @Container
-    protected static final GenericContainer<?> minio = new GenericContainer<>(
-            new org.testcontainers.images.builder.ImageFromDockerfile()
-                    .withFileFromClasspath("Dockerfile", "docker/minio/Dockerfile")
-    )
+    protected static final GenericContainer<?> minio = new GenericContainer<>("minio/minio:RELEASE.2023-03-20T20-16-18Z")
             .withExposedPorts(9000)
             .withEnv("MINIO_ROOT_USER", "minio_admin")
             .withEnv("MINIO_ROOT_PASSWORD", "minio_secure_pass_2026")
