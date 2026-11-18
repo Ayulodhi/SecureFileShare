@@ -20,16 +20,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
-public class TaskThreeFriendsTddTest {
+public class TaskThreeFriendsTddTest extends BaseAuthIntegrationTest {
 
     @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        String host = System.getenv().getOrDefault("POSTGRES_HOST", "localhost");
-        String port = System.getenv().getOrDefault("POSTGRES_PORT", "5432");
-        registry.add("spring.datasource.url", () -> "jdbc:postgresql://" + host + ":" + port + "/sfs_auth");
-        registry.add("spring.datasource.username", () -> "sfs_admin");
-        registry.add("spring.datasource.password", () -> "sfs_secure_pass_2026");
-        registry.add("security.jwt.secret", () -> "super_secret_test_jwt_key_auth_service_2026_at_least_32_chars!");
+    static void configureExtraProperties(DynamicPropertyRegistry registry) {
         registry.add("security.admin.initial-username", () -> "admin");
         registry.add("security.admin.initial-email", () -> "admin@test.com");
         registry.add("security.admin.initial-password", () -> "AdminSecurePass2026!");

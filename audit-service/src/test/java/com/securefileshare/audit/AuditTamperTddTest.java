@@ -17,16 +17,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-public class AuditTamperTddTest {
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        String host = System.getenv().getOrDefault("POSTGRES_HOST", "localhost");
-        String port = System.getenv().getOrDefault("POSTGRES_PORT", "5432");
-        registry.add("spring.datasource.url", () -> "jdbc:postgresql://" + host + ":" + port + "/sfs_audit");
-        registry.add("spring.datasource.username", () -> "sfs_admin");
-        registry.add("spring.datasource.password", () -> "sfs_secure_pass_2026");
-    }
+public class AuditTamperTddTest extends BaseAuditIntegrationTest {
 
     @Autowired
     private AuditService auditService;
