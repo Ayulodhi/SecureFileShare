@@ -127,8 +127,13 @@
         }
     }
 
+    # Deny public access to internal audit ingestion endpoint from the internet
+    handle /api/v1/audit/events* {
+        respond "Forbidden" 403
+    }
+
     # Audit & Compliance Service (audit-service)
-    # Handles: Append-only security audit log events
+    # Handles: Append-only security audit log events and admin oversight
     handle /api/v1/audit* {
         reverse_proxy audit-service:8084 {
             header_up X-Real-IP {remote_host}
