@@ -8,6 +8,7 @@ import {
   Key,
   LogOut,
   User,
+  Users,
 } from 'lucide-react';
 
 export type NavTab = 'files' | 'upload' | 'shares' | 'friends' | 'audit' | 'keys';
