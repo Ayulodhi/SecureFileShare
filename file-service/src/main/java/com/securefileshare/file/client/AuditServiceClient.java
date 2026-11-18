@@ -24,12 +24,15 @@ public class AuditServiceClient {
 
     private final RestClient restClient;
     private final String auditServiceUrl;
+    private final String serviceKey;
     private final ObjectMapper objectMapper;
 
     public AuditServiceClient(
             @Value("${services.audit.url:http://localhost:8084}") String auditServiceUrl,
+            @Value("${audit.service-key:sfs_service_audit_secret_2026}") String serviceKey,
             ObjectMapper objectMapper) {
         this.auditServiceUrl = auditServiceUrl;
+        this.serviceKey = serviceKey;
         this.objectMapper = objectMapper;
         this.restClient = RestClient.builder()
                 .baseUrl(auditServiceUrl)
@@ -47,6 +50,7 @@ public class AuditServiceClient {
 
                 restClient.post()
                         .uri("/api/v1/audit/events")
+                        .header("X-Service-Key", serviceKey)
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(objectMapper.writeValueAsString(payload))
                         .retrieve()
