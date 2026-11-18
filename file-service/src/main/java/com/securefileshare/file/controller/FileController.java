@@ -94,6 +94,23 @@ public class FileController {
     }
 
     /**
+     * Lists all files shared with the authenticated recipient.
+     * WHAT: Returns metadata for files where the caller holds a valid share grant.
+     * WHY: Powers GET /files/shared-with-me.
+     *
+     * @param authentication Spring Security authentication holding caller UUID
+     * @return ApiResponse containing list of FileMetadataResponse
+     */
+    @GetMapping("/shared-with-me")
+    public ResponseEntity<ApiResponse<List<FileMetadataResponse>>> listSharedFiles(Authentication authentication) {
+        UUID callerId = (UUID) authentication.getPrincipal();
+        log.debug("Listing shared files for caller {}", callerId);
+
+        List<FileMetadataResponse> files = fileService.listSharedFiles(callerId);
+        return ResponseEntity.ok(ApiResponse.success("Shared files retrieved successfully", files));
+    }
+
+    /**
      * Streams the complete encrypted package (ciphertext and metadata) for client decryption.
      * WHAT: Returns ciphertext stream in response body and cryptographic parameters in custom HTTP response headers.
      * WHY: Powers GET /files/{id}/package. Allowed only for file owner or authorized recipients.
