@@ -166,4 +166,25 @@ public class FileController {
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Recipient key added successfully", response));
     }
+
+    /**
+     * Deletes an encrypted file.
+     * WHAT: Deletes file record and ciphertext from storage if requested by the owner.
+     * WHY: Powers DELETE /files/{id}. Returns 404 for unauthorized users or missing files.
+     *
+     * @param id             Target file UUID
+     * @param authentication Spring Security authentication holding caller UUID
+     * @return ApiResponse confirming deletion
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteFile(
+            @PathVariable UUID id,
+            Authentication authentication) {
+
+        UUID callerId = (UUID) authentication.getPrincipal();
+        log.info("Received delete request for file {} from user {}", id, callerId);
+
+        fileService.deleteFile(id, callerId);
+        return ResponseEntity.ok(ApiResponse.success("File deleted successfully", null));
+    }
 }

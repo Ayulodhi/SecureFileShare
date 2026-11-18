@@ -291,6 +291,27 @@ public class FileService {
         return FileKeyResponse.fromEntity(savedKey);
     }
 
+    @Transactional
+    public void deleteFile(UUID fileId, UUID callerId) {
+        log.info("User {} requesting deletion of file {}", callerId, fileId);
+        FileRecord record = fileRepository.findById(fileId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "File not found"));
+
+        if (!record.getOwnerId().equals(callerId)) {
+            log.warn("Unauthorized delete attempt by user {} on file {} owned by {}", callerId, fileId, record.getOwnerId());
+            throw new ApiException(HttpStatus.NOT_FOUND, "File not found");
+        }
+
+        try {
+            minioStorageService.deleteObject(record.getObjectKey());
+        } catch (Exception e) {
+            log.warn("Failed to delete object from MinIO storage: {}", e.getMessage());
+        }
+
+        fileRepository.delete(record);
+        log.info("File {} deleted successfully by owner {}", fileId, callerId);
+    }
+
     /**
      * Placeholder access check for shared recipients.
      * WHAT: In Phase 2, verifies if a wrapped key exists for this recipient in the database.
