@@ -33,7 +33,7 @@ public class Friendship {
     public Friendship() {}
 
     public Friendship(User userA, User userB) {
-        if (userA.getId().compareTo(userB.getId()) < 0) {
+        if (compareUuids(userA.getId(), userB.getId()) < 0) {
             this.userId1 = userA;
             this.userId2 = userB;
         } else {
@@ -41,6 +41,18 @@ public class Friendship {
             this.userId2 = userA;
         }
         this.createdAt = Instant.now();
+    }
+
+    private static int compareUuids(UUID u1, UUID u2) {
+        long m1 = u1.getMostSignificantBits();
+        long m2 = u2.getMostSignificantBits();
+        int cmp = Long.compareUnsigned(m1, m2);
+        if (cmp != 0) {
+            return cmp;
+        }
+        long l1 = u1.getLeastSignificantBits();
+        long l2 = u2.getLeastSignificantBits();
+        return Long.compareUnsigned(l1, l2);
     }
 
     @PrePersist
