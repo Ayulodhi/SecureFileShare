@@ -1,5 +1,6 @@
 package com.securefileshare.auth.service;
 
+import com.securefileshare.auth.client.AuditServiceClient;
 import com.securefileshare.auth.dto.AuthResponse;
 import com.securefileshare.auth.dto.LoginRequest;
 import com.securefileshare.auth.dto.RegisterRequest;
@@ -33,18 +34,21 @@ public class AuthService {
     private final JwtService jwtService;
     private final RateLimiterService rateLimiterService;
     private final StringRedisTemplate redisTemplate;
+    private final AuditServiceClient auditServiceClient;
 
     public AuthService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             RateLimiterService rateLimiterService,
-            StringRedisTemplate redisTemplate) {
+            StringRedisTemplate redisTemplate,
+            AuditServiceClient auditServiceClient) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.rateLimiterService = rateLimiterService;
         this.redisTemplate = redisTemplate;
+        this.auditServiceClient = auditServiceClient;
     }
 
     /**
@@ -84,6 +88,8 @@ public class AuthService {
 
         User saved = userRepository.save(user);
 
+        auditServiceClient.logEvent(saved.getUsername(), "REGISTER", "—");
+
         return new UserResponse(saved.getId(), saved.getUsername(), saved.getEmail(), saved.getRole(), saved.getCreatedAt());
     }
 
@@ -114,6 +120,8 @@ public class AuthService {
 
         // Step 4: Reset rate-limit counter upon successful authentication
         rateLimiterService.resetAttempts(request.getUsername(), clientIp);
+
+        auditServiceClient.logEvent(user.getUsername(), "LOGIN", "—");
 
         // Step 5: Generate cryptographically signed JWT with unique JTI
         String token = jwtService.generateToken(

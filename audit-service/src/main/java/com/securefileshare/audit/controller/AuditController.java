@@ -4,8 +4,9 @@ import com.securefileshare.audit.dto.AuditEntryDto;
 import com.securefileshare.audit.dto.AuditVerifyResultDto;
 import com.securefileshare.audit.dto.LogEventRequest;
 import com.securefileshare.audit.service.AuditService;
-import com.securefileshare.common.dto.ApiResponse;
-import jakarta.validation.Valid;
+import com.securefileshare.common.exception.ApiException;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -52,11 +53,29 @@ public class AuditController {
         return ResponseEntity.ok(ApiResponse.success("Audit chain verification completed", result));
     }
 
+    @Value("${audit.service-key:sfs_service_audit_secret_2026}")
+    private String expectedServiceKey;
+
     /**
      * Ingests an audit event from internal microservices.
      */
     @PostMapping("/events")
-    public ResponseEntity<ApiResponse<AuditEntryDto>> logEvent(@Valid @RequestBody LogEventRequest request) {
+    public ResponseEntity<ApiResponse<AuditEntryDto>> logEvent(
+            @RequestHeader(value = "X-Service-Key", required = false) String serviceKey,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @Valid @RequestBody LogEventRequest request) {
+
+        if (serviceKey == null || serviceKey.isBlank()) {
+            if (authorization != null && authorization.startsWith("Bearer ")) {
+                throw new ApiException(HttpStatus.FORBIDDEN, "Access denied: service credential required for audit ingestion");
+            }
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Missing service credential");
+        }
+
+        if (!expectedServiceKey.equals(serviceKey)) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Invalid service credential");
+        }
+
         AuditEntryDto entry = auditService.logEvent(request);
         return new ResponseEntity<>(ApiResponse.success("Audit event logged successfully", entry), HttpStatus.CREATED);
     }

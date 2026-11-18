@@ -107,6 +107,34 @@ public class AuditServiceIntegrationTest extends BaseAuditIntegrationTest {
                 .andExpect(jsonPath("$.data[0].action").isNotEmpty());
     }
 
+    @Test
+    @DisplayName("Audit ingestion authentication: No credential -> 401; User JWT -> 403; Valid service key -> 201")
+    void testAuditIngestionAuthentication() throws Exception {
+        LogEventRequest event = new LogEventRequest("bot", "SYSTEM_CHECK", "none");
+        String userToken = generateTestJwt(UUID.randomUUID(), "user", "ROLE_SENDER_RECIPIENT");
+
+        // 1. No credential -> 401 Unauthorized
+        mockMvc.perform(post("/audit/events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(event)))
+                .andExpect(status().isUnauthorized());
+
+        // 2. User JWT without service key -> 403 Forbidden
+        mockMvc.perform(post("/audit/events")
+                        .header("Authorization", "Bearer " + userToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(event)))
+                .andExpect(status().isForbidden());
+
+        // 3. Valid service key -> 201 Created
+        mockMvc.perform(post("/audit/events")
+                        .header("X-Service-Key", "sfs_service_audit_secret_2026")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(event)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
     private String generateTestJwt(UUID userId, String username, String role) {
         SecretKey key = Keys.hmacShaKeyFor(TEST_JWT_SECRET.getBytes(StandardCharsets.UTF_8));
         return Jwts.builder()

@@ -1,6 +1,7 @@
 package com.securefileshare.share.service;
 
 import com.securefileshare.common.exception.ApiException;
+import com.securefileshare.share.client.AuditServiceClient;
 import com.securefileshare.share.dto.CreateShareRequest;
 import com.securefileshare.share.dto.ShareResponse;
 import com.securefileshare.share.entity.ShareRecord;
@@ -26,9 +27,11 @@ public class ShareService {
     private static final Logger log = LoggerFactory.getLogger(ShareService.class);
 
     private final ShareRepository shareRepository;
+    private final AuditServiceClient auditServiceClient;
 
-    public ShareService(ShareRepository shareRepository) {
+    public ShareService(ShareRepository shareRepository, AuditServiceClient auditServiceClient) {
         this.shareRepository = shareRepository;
+        this.auditServiceClient = auditServiceClient;
     }
 
     /**
@@ -83,6 +86,7 @@ public class ShareService {
         );
 
         ShareRecord saved = shareRepository.save(record);
+        auditServiceClient.logEvent(ownerId.toString(), "CREATE_SHARE", saved.getFileName());
         log.info("Share link created successfully with ID: {}", saved.getId());
         return ShareResponse.fromEntity(saved, baseUrl);
     }
@@ -103,6 +107,7 @@ public class ShareService {
 
         record.setStatus("REVOKED");
         shareRepository.save(record);
+        auditServiceClient.logEvent(callerId.toString(), "REVOKE_SHARE", record.getFileName());
         log.info("Share {} successfully revoked", shareId);
     }
 
