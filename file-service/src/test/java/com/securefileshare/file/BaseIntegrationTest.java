@@ -19,7 +19,7 @@ public abstract class BaseIntegrationTest {
             .withPassword("sfs_secure_pass_2026");
 
     @Container
-    protected static final GenericContainer<?> minio = new GenericContainer<>("minio/minio:latest")
+    protected static final GenericContainer<?> minio = new GenericContainer<>("quay.io/minio/minio:latest")
             .withExposedPorts(9000)
             .withEnv("MINIO_ROOT_USER", "minio_admin")
             .withEnv("MINIO_ROOT_PASSWORD", "minio_secure_pass_2026")
