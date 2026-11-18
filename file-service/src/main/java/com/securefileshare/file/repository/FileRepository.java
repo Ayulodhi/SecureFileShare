@@ -7,6 +7,8 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  * Spring Data JPA repository for FileRecord entities.
@@ -35,4 +37,15 @@ public interface FileRepository extends JpaRepository<FileRecord, UUID> {
      * @return Optional containing matching FileRecord if found
      */
     Optional<FileRecord> findByObjectKey(String objectKey);
+
+    /**
+     * Retrieves all files shared with a specific recipient via file_keys.
+     * WHAT: Finds file records where a FileKey exists for the given recipient.
+     * WHY: Powers the GET /files/shared-with-me endpoint.
+     *
+     * @param recipientId UUID of the recipient
+     * @return List of FileRecord entities shared with the recipient
+     */
+    @Query("SELECT fk.fileRecord FROM FileKey fk WHERE fk.recipientId = :recipientId ORDER BY fk.createdAt DESC")
+    List<FileRecord> findSharedFilesForRecipient(@Param("recipientId") UUID recipientId);
 }

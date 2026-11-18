@@ -206,6 +206,23 @@ public class FileService {
     }
 
     /**
+     * Lists all files shared with the authenticated recipient.
+     * WHAT: Retrieves metadata for files where the caller holds a valid FileKey share grant.
+     * WHY: Powers the GET /files/shared-with-me endpoint.
+     *
+     * @param recipientId Authenticated recipient UUID
+     * @return List of FileMetadataResponse DTOs
+     */
+    @Transactional(readOnly = true)
+    public List<FileMetadataResponse> listSharedFiles(UUID recipientId) {
+        log.debug("Listing shared files for recipient {}", recipientId);
+        List<FileRecord> records = fileRepository.findSharedFilesForRecipient(recipientId);
+        return records.stream()
+                .map(FileMetadataResponse::fromEntity)
+                .toList();
+    }
+
+    /**
      * Retrieves the complete encrypted file package for decryption on the caller's device.
      * WHAT: Validates caller authorization (owner or valid recipient share), retrieves caller's wrapped AES key,
      *      and returns a streaming connection to the MinIO ciphertext.

@@ -29,19 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
-public class TaskZeroLeakTest {
-
-    private static final String TEST_JWT_SECRET = "super_secret_test_jwt_key_file_service_2026_at_least_32_chars!";
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        String host = System.getenv().getOrDefault("POSTGRES_HOST", "localhost");
-        String port = System.getenv().getOrDefault("POSTGRES_PORT", "5432");
-        registry.add("spring.datasource.url", () -> "jdbc:postgresql://" + host + ":" + port + "/sfs_file");
-        registry.add("spring.datasource.username", () -> "sfs_admin");
-        registry.add("spring.datasource.password", () -> "sfs_secure_pass_2026");
-        registry.add("security.jwt.secret", () -> TEST_JWT_SECRET);
-    }
+public class TaskZeroLeakTest extends BaseIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
