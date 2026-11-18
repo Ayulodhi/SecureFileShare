@@ -19,11 +19,14 @@ public abstract class BaseIntegrationTest {
             .withPassword("sfs_secure_pass_2026");
 
     @Container
-    protected static final GenericContainer<?> minio = new GenericContainer<>("quay.io/minio/minio:latest")
+    protected static final GenericContainer<?> minio = new GenericContainer<>(
+            new org.testcontainers.images.builder.ImageFromDockerfile()
+                    .withFileFromClasspath("Dockerfile", "docker/minio/Dockerfile")
+    )
             .withExposedPorts(9000)
             .withEnv("MINIO_ROOT_USER", "minio_admin")
             .withEnv("MINIO_ROOT_PASSWORD", "minio_secure_pass_2026")
-            .withCommand("server /data");
+            .withCommand("server", "/data");
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
