@@ -21,7 +21,7 @@ public class Invite {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "invite_code", nullable = false, unique = true, length = 32)
+    @Column(name = "invite_code", nullable = false, unique = true, length = 64)
     private String inviteCode;
 
     @Column(name = "expires_at", nullable = false)

@@ -47,7 +47,7 @@ CREATE INDEX IF NOT EXISTS idx_friendships_user2 ON friendships(user_id_2);
 CREATE TABLE IF NOT EXISTS invites (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    invite_code VARCHAR(32) NOT NULL UNIQUE,
+    invite_code VARCHAR(64) NOT NULL UNIQUE,
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     max_uses INT NOT NULL DEFAULT 1,
     use_count INT NOT NULL DEFAULT 0,
