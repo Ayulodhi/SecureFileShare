@@ -201,6 +201,8 @@ services:
       ADMIN_INITIAL_USERNAME: ${ADMIN_INITIAL_USERNAME:-admin}
       ADMIN_INITIAL_EMAIL: ${ADMIN_INITIAL_EMAIL:-admin@securefileshare.local}
       ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-AdminSecurePass2026!}
+      SERVICES_AUDIT_URL: http://audit-service:8084/api/v1
+      AUDIT_SERVICE_KEY: ${AUDIT_SERVICE_KEY}
       # JVM flags: bounds max heap to 384MB within the 512MB cgroup limit
       # Why: Leaves 128MB headroom for Metaspace, thread stacks, and native memory
       JAVA_OPTS: "-XX:+UseContainerSupport -Xms128m -Xmx384m -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
@@ -211,6 +213,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      audit-service:
         condition: service_healthy
     deploy:
       resources:
@@ -246,7 +250,11 @@ services:
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-sfs-encrypted-files}
       AUTH_SERVICE_URL: http://auth-service:8081
+      SERVICES_AUDIT_URL: http://audit-service:8084/api/v1
+      AUDIT_SERVICE_KEY: ${AUDIT_SERVICE_KEY}
       JWT_SECRET: ${JWT_SECRET}
+      SERVICES_AUDIT_URL: http://audit-service:8084/api/v1
+      AUDIT_SERVICE_KEY: ${AUDIT_SERVICE_KEY}
       JAVA_OPTS: "-XX:+UseContainerSupport -Xms128m -Xmx384m -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
     networks:
       - sfs_prod_internal
@@ -254,7 +262,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      audit-service:
+        condition: service_healthy
       minio:
+        condition: service_healthy
+      audit-service:
         condition: service_healthy
     deploy:
       resources:
@@ -284,12 +296,16 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
+      SERVICES_AUDIT_URL: http://audit-service:8084/api/v1
+      AUDIT_SERVICE_KEY: ${AUDIT_SERVICE_KEY}
       JAVA_OPTS: "-XX:+UseContainerSupport -Xms128m -Xmx384m -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
     networks:
       - sfs_prod_internal
       - sfs_prod_public
     depends_on:
       postgres:
+        condition: service_healthy
+      audit-service:
         condition: service_healthy
     deploy:
       resources:
@@ -319,12 +335,16 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
+      SERVICES_AUDIT_URL: http://audit-service:8084/api/v1
+      AUDIT_SERVICE_KEY: ${AUDIT_SERVICE_KEY}
       JAVA_OPTS: "-XX:+UseContainerSupport -Xms128m -Xmx384m -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
     networks:
       - sfs_prod_internal
       - sfs_prod_public
     depends_on:
       postgres:
+        condition: service_healthy
+      audit-service:
         condition: service_healthy
     deploy:
       resources:
