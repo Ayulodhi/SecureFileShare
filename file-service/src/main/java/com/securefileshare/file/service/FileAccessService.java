@@ -32,14 +32,14 @@ public class FileAccessService {
      */
     public FileRecord verifyAccessOrThrow(UUID fileId, UUID callerId) {
         FileRecord record = fileRepository.findById(fileId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "File not found with ID: " + fileId));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "File not found"));
 
         boolean isOwner = record.getOwnerId().equals(callerId);
         boolean hasDirectGrant = fileKeyRepository.existsByFileRecord_IdAndRecipientId(fileId, callerId);
 
         if (!isOwner && !hasDirectGrant) {
             // Return 404 instead of 403 to prevent file ID enumeration / information disclosure
-            throw new ApiException(HttpStatus.NOT_FOUND, "File not found with ID: " + fileId);
+            throw new ApiException(HttpStatus.NOT_FOUND, "File not found");
         }
 
         return record;
@@ -50,10 +50,10 @@ public class FileAccessService {
      */
     public FileRecord verifyOwnerOrThrow(UUID fileId, UUID callerId) {
         FileRecord record = fileRepository.findById(fileId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "File not found with ID: " + fileId));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "File not found"));
 
         if (!record.getOwnerId().equals(callerId)) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "File not found with ID: " + fileId);
+            throw new ApiException(HttpStatus.NOT_FOUND, "File not found");
         }
 
         return record;
