@@ -1,7 +1,7 @@
 # ==============================================================================
 # File: .github/workflows/ci.yml
-# WHAT: Clean, streamlined Continuous Integration (CI) pipeline.
-# WHY: Compiles Java 21 codebase and runs unit tests reliably without brittle testcontainers pulls.
+# WHAT: Clean, robust CI workflow with full dependency checks and unit/integration tests.
+# WHY: Verifies code quality and ensures smooth test execution without external pull blocks.
 # ==============================================================================
 
 name: CI Pipeline
@@ -22,7 +22,7 @@ permissions:
 
 jobs:
   build-and-test:
-    name: Build & Test (Java 21)
+    name: Build & Verify (Java 21)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
@@ -38,9 +38,27 @@ jobs:
       - name: Grant execute permission to Maven wrapper
         run: chmod +x ./mvnw
 
-      - name: Compile and run unit tests
+      - name: Start local test infrastructure (Postgres, Redis)
+        run: |
+          docker compose up -d postgres redis
+          for i in $(seq 1 30); do
+            if docker compose exec -T postgres pg_isready -U sfs_admin -d postgres 2>/dev/null; then
+              echo "Postgres is ready."
+              break
+            fi
+            echo "Waiting for postgres ($i/30)..."
+            sleep 2
+          done
+          docker compose exec -T postgres psql -U sfs_admin -d postgres -c "CREATE DATABASE sfs_auth;" || true
+          docker compose exec -T postgres psql -U sfs_admin -d postgres -c "CREATE DATABASE sfs_file;" || true
+          docker compose exec -T postgres psql -U sfs_admin -d postgres -c "CREATE DATABASE sfs_share;" || true
+          docker compose exec -T postgres psql -U sfs_admin -d postgres -c "CREATE DATABASE sfs_audit;" || true
+
+      - name: Run Maven build and tests
         env:
           JAVA_TOOL_OPTIONS: "-Djava.awt.headless=true"
+          DOCKER_API_VERSION: "1.44"
+          TESTCONTAINERS_RYUK_DISABLED: "true"
         run: ./mvnw -B clean test --no-transfer-progress
 
       - name: Archive JUnit test reports
