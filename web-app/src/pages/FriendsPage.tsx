@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
-import { Users, UserPlus, Link, Copy, Check, ShieldAlert } from 'lucide-react';
+import { Users, UserPlus, Copy, Check, ShieldAlert } from 'lucide-react';
 
 export function FriendsPage() {
   const [friendCode, setFriendCode] = useState('');

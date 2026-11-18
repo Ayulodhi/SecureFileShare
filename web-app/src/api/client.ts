@@ -84,7 +84,8 @@ export async function request<T>(
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const isProduction = (typeof import.meta !== 'undefined' && import.meta.env?.PROD) || process.env.NODE_ENV === 'production';
+  const isProduction = (typeof import.meta !== 'undefined' && (import.meta as any).env?.PROD) ||
+    (typeof globalThis !== 'undefined' && (globalThis as any).process?.env?.NODE_ENV === 'production');
 
   let response: Response;
   try {
