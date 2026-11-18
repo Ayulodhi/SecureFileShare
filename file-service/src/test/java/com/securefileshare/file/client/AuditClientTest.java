@@ -13,7 +13,7 @@ public class AuditClientTest {
 
     @Test
     void testAuditPublishingDoesNotBlockWhenAuditServiceIsDown() {
-        AuditServiceClient auditClient = new AuditServiceClient("http://localhost:1", new ObjectMapper());
+        AuditServiceClient auditClient = new AuditServiceClient("http://localhost:1", "sfs_service_audit_secret_2026", new ObjectMapper());
 
         assertThatCode(() -> {
             auditClient.logEvent("alice", "UPLOAD", "test.txt");
