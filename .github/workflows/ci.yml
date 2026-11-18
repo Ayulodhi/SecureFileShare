@@ -101,7 +101,7 @@ jobs:
           done
 
       - name: Execute Maven build and unit tests
-        # Why: "-B" enables non-interactive batch mode; runs test phase with testcontainers reuse enabled
+        # Why: "-B" enables non-interactive batch mode; runs verify with testcontainers reuse and explicit docker host
         env:
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
@@ -113,7 +113,8 @@ jobs:
           JAVA_TOOL_OPTIONS: "-Djava.awt.headless=true"
           DOCKER_API_VERSION: "1.44"
           TESTCONTAINERS_RYUK_DISABLED: "true"
-        run: ./mvnw -B clean test --no-transfer-progress
+          TESTCONTAINERS_HOST_OVERRIDE: "localhost"
+        run: ./mvnw -B clean verify --no-transfer-progress
 
       - name: Archive JUnit test reports
         # Why: "if: always()" ensures surefire failure reports are uploaded even if tests fail
