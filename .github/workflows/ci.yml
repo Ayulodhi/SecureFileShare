@@ -111,6 +111,7 @@ jobs:
           MINIO_ROOT_USER: minio_admin
           MINIO_ROOT_PASSWORD: minio_secret_pass_2026
           JAVA_TOOL_OPTIONS: "-Djava.awt.headless=true"
+          DOCKER_API_VERSION: "1.44"
         run: ./mvnw -B clean verify --no-transfer-progress
 
       - name: Archive JUnit test reports
