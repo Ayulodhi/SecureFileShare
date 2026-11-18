@@ -31,22 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
-public class AuditServiceIntegrationTest {
-
-    private static final String TEST_JWT_SECRET = "super_secret_test_jwt_key_audit_service_2026_at_least_32_chars!";
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        String host = System.getenv().getOrDefault("POSTGRES_HOST", "localhost");
-        String port = System.getenv().getOrDefault("POSTGRES_PORT", "5432");
-        String user = System.getenv().getOrDefault("POSTGRES_USER", "sfs_admin");
-        String pass = System.getenv().getOrDefault("POSTGRES_PASSWORD", "sfs_secure_pass_2026");
-
-        registry.add("spring.datasource.url", () -> "jdbc:postgresql://" + host + ":" + port + "/sfs_audit");
-        registry.add("spring.datasource.username", () -> user);
-        registry.add("spring.datasource.password", () -> pass);
-        registry.add("security.jwt.secret", () -> TEST_JWT_SECRET);
-    }
+public class AuditServiceIntegrationTest extends BaseAuditIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;

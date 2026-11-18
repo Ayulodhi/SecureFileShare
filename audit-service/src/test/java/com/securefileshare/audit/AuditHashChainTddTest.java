@@ -20,16 +20,7 @@ import java.util.concurrent.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-public class AuditHashChainTddTest {
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        String host = System.getenv().getOrDefault("POSTGRES_HOST", "localhost");
-        String port = System.getenv().getOrDefault("POSTGRES_PORT", "5432");
-        registry.add("spring.datasource.url", () -> "jdbc:postgresql://" + host + ":" + port + "/sfs_audit");
-        registry.add("spring.datasource.username", () -> "sfs_admin");
-        registry.add("spring.datasource.password", () -> "sfs_secure_pass_2026");
-    }
+public class AuditHashChainTddTest extends BaseAuditIntegrationTest {
 
     @Autowired
     private AuditService auditService;

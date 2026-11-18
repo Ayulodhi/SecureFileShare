@@ -48,23 +48,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
-public class AuthServiceIntegrationTest {
-
-    private static final String TEST_JWT_SECRET = "super_secret_test_jwt_key_auth_service_2026_at_least_32_chars!";
+public class AuthServiceIntegrationTest extends BaseAuthIntegrationTest {
 
     @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        String host = System.getenv().getOrDefault("POSTGRES_HOST", "localhost");
-        String port = System.getenv().getOrDefault("POSTGRES_PORT", "5432");
-        String user = System.getenv().getOrDefault("POSTGRES_USER", "sfs_admin");
-        String pass = System.getenv().getOrDefault("POSTGRES_PASSWORD", "sfs_secure_pass_2026");
-
-        registry.add("spring.datasource.url", () -> "jdbc:postgresql://" + host + ":" + port + "/sfs_auth");
-        registry.add("spring.datasource.username", () -> user);
-        registry.add("spring.datasource.password", () -> pass);
-
+    static void configureExtraProperties(DynamicPropertyRegistry registry) {
         // Required application security & seed properties
-        registry.add("security.jwt.secret", () -> TEST_JWT_SECRET);
         registry.add("security.jwt.expiration-ms", () -> 3600000L);
         registry.add("security.rate-limit.max-attempts", () -> 5);
         registry.add("security.rate-limit.window-minutes", () -> 15);

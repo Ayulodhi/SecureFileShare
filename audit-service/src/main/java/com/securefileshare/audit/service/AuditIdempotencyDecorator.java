@@ -31,7 +31,7 @@ public class AuditIdempotencyDecorator {
             String key = eventId.toString();
             if (processedEventIds.contains(key)) {
                 // Already processed (idempotent ignore)
-                return new AuditEntryDto(0L, java.time.Instant.now().toString(), request.getActor(), com.securefileshare.client.model.AuditAction.valueOf(request.getAction()), request.getFileName(), "SUCCESS", "", "");
+                return new AuditEntryDto(0L, java.time.Instant.now(), request.getActor(), request.getAction(), request.getFileName(), "SUCCESS", "");
             }
             processedEventIds.add(key);
         }
