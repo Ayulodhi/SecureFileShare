@@ -24,14 +24,21 @@ public abstract class BaseAuthIntegrationTest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", () -> postgres.getJdbcUrl().replace("localhost", "127.0.0.1"));
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
+        String jdbcUrl = System.getenv().containsKey("CI")
+                ? "jdbc:postgresql://localhost:5432/sfs_auth"
+                : postgres.getJdbcUrl().replace("localhost", "127.0.0.1");
+
+        registry.add("spring.datasource.url", () -> jdbcUrl);
+        registry.add("spring.datasource.username", () -> System.getenv().containsKey("CI") ? "sfs_admin" : postgres.getUsername());
+        registry.add("spring.datasource.password", () -> System.getenv().containsKey("CI") ? "sfs_secure_pass_2026" : postgres.getPassword());
         registry.add("spring.flyway.enabled", () -> "true");
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
 
-        registry.add("spring.data.redis.host", () -> "127.0.0.1");
-        registry.add("spring.data.redis.port", () -> redis.getMappedPort(6379));
+        String redisHost = System.getenv().containsKey("CI") ? "localhost" : "127.0.0.1";
+        int redisPort = System.getenv().containsKey("CI") ? 6379 : redis.getMappedPort(6379);
+
+        registry.add("spring.data.redis.host", () -> redisHost);
+        registry.add("spring.data.redis.port", () -> redisPort);
 
         registry.add("security.jwt.secret", () -> TEST_JWT_SECRET);
     }

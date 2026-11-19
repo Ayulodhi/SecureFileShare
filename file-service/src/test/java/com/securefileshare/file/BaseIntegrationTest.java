@@ -30,9 +30,13 @@ public abstract class BaseIntegrationTest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", () -> postgres.getJdbcUrl().replace("localhost", "127.0.0.1"));
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
+        String jdbcUrl = System.getenv().containsKey("CI")
+                ? "jdbc:postgresql://localhost:5432/sfs_file"
+                : postgres.getJdbcUrl().replace("localhost", "127.0.0.1");
+
+        registry.add("spring.datasource.url", () -> jdbcUrl);
+        registry.add("spring.datasource.username", () -> System.getenv().containsKey("CI") ? "sfs_admin" : postgres.getUsername());
+        registry.add("spring.datasource.password", () -> System.getenv().containsKey("CI") ? "sfs_secure_pass_2026" : postgres.getPassword());
         registry.add("spring.flyway.enabled", () -> "true");
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
 
