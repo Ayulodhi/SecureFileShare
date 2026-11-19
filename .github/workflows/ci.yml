@@ -101,7 +101,7 @@ jobs:
           done
 
       - name: Execute Maven build and unit tests
-        # Why: "-B" enables non-interactive batch mode; run unit tests first, skip integration tests in CI if docker network blocks testcontainers
+        # Why: "-B" enables non-interactive batch mode; use CI MinIO endpoint and disable ryuk in CI
         env:
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
@@ -112,6 +112,7 @@ jobs:
           MINIO_ROOT_PASSWORD: minio_secret_pass_2026
           JAVA_TOOL_OPTIONS: "-Djava.awt.headless=true"
           DOCKER_API_VERSION: "1.44"
+          TESTCONTAINERS_RYUK_DISABLED: "true"
         run: ./mvnw -B clean test --no-transfer-progress
 
       - name: Archive JUnit test reports
