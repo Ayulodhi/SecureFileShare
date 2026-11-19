@@ -1,0 +1,46 @@
+# -*- coding: utf-8 -*-
+"""
+generate_reports.py
+Complete generator for SecureFileShare MCA Project Report:
+1. PROJECT_REPORT.html
+2. PROJECT_REPORT.pdf (via Chrome headless)
+3. PROJECT_REPORT.docx (via python-docx)
+"""
+
+import os
+import sys
+import base64
+import subprocess
+import re
+import docx
+from docx import Document
+from docx.shared import Inches, Pt, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
+from docx.oxml import OxmlElement, parse_xml
+from docx.oxml.ns import nsdecls, qn
+
+BASE_DIR = r"E:\project emp\pbl java"
+IMG_DIR = os.path.join(BASE_DIR, "images")
+HTML_FILE = os.path.join(BASE_DIR, "PROJECT_REPORT.html")
+PDF_FILE = os.path.join(BASE_DIR, "PROJECT_REPORT.pdf")
+DOCX_FILE = os.path.join(BASE_DIR, "PROJECT_REPORT.docx")
+
+def b64_img(filename):
+    p = os.path.join(IMG_DIR, filename)
+    if not os.path.exists(p):
+        return ""
+    ext = os.path.splitext(filename)[1].lower().replace(".", "")
+    if ext == "jpg": ext = "jpeg"
+    with open(p, "rb") as f:
+        return f"data:image/{ext};base64," + base64.b64encode(f.read()).decode("utf-8")
+
+img_usecase = b64_img("fig1_use_case_overview.png")
+img_storage = b64_img("fig2_storage_workflow_activity.png")
+img_sequence = b64_img("fig3_sequence_upload_pipeline.png")
+img_client_arch = b64_img("fig4_client_service_arch.png")
+img_topology = b64_img("fig5_component_storage_topology.jpg")
+img_er = b64_img("fig6_database_er_diagram.png")
+img_cicd = b64_img("fig7_cicd_release_pipeline.png")
+
+print("Building complete HTML content...")

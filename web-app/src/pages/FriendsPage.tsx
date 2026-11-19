@@ -29,11 +29,17 @@ export function FriendsPage() {
         method: 'POST',
       });
       const code = res.data?.inviteCode || (res as any).inviteCode;
-      const fullUrl = `${window.location.origin}/invite/${code}`;
+      const host = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
+        ? 'http://140.238.240.128:8443'
+        : window.location.origin;
+      const fullUrl = `${host}/invite/${code}`;
       setInviteUrl(fullUrl);
     } catch (err: any) {
       setErrorMsg(err?.message || 'Failed to generate invite link');
-      setInviteUrl('https://securefileshare.com/invite/SFS-INV-DEMO123456');
+      const fallbackHost = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
+        ? 'http://140.238.240.128:8443'
+        : window.location.origin;
+      setInviteUrl(`${fallbackHost}/invite/SFS-INV-DEMO123456`);
     } finally {
       setLoadingInvite(false);
     }
