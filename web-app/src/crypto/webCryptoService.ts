@@ -47,6 +47,9 @@ export function spkiToPem(spkiBuffer: ArrayBuffer): string {
 }
 
 export function pemToSpkiBuffer(pem: string): ArrayBuffer {
+  if (!pem || typeof pem !== 'string') {
+    throw new Error('Invalid or missing RSA public key PEM');
+  }
   const cleanBase64 = pem
     .replace(/-----BEGIN [A-Z ]+-----/g, '')
     .replace(/-----END [A-Z ]+-----/g, '')
