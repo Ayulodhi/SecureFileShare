@@ -28,6 +28,8 @@ public class RegisterRequest {
     @NotNull(message = "Role is required")
     private Role role;
 
+    private String inviteCode;
+
     public RegisterRequest() {}
 
     public RegisterRequest(String username, String email, String password, Role role) {
@@ -35,6 +37,14 @@ public class RegisterRequest {
         this.email = email;
         this.password = password;
         this.role = role;
+    }
+
+    public String getInviteCode() {
+        return inviteCode;
+    }
+
+    public void setInviteCode(String inviteCode) {
+        this.inviteCode = inviteCode;
     }
 
     public String getUsername() {
