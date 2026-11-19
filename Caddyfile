@@ -94,9 +94,17 @@
         respond "OK" 200
     }
 
-    # Authentication & User Management Service (auth-service)
-    # Handles: Registration, Login, RSA/EC Key Registry, Token Refresh, Health
-    handle /api/v1/auth* {
+    # Friends & Invites Routing (auth-service)
+    handle /api/v1/friends* {
+        reverse_proxy auth-service:8081 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+            header_up Host {upstream_hostport}
+        }
+    }
+
+    handle /api/v1/invites* {
         reverse_proxy auth-service:8081 {
             header_up X-Real-IP {remote_host}
             header_up X-Forwarded-For {remote_host}
