@@ -8,11 +8,9 @@
 
 FROM alpine:3.20
 
-# Install MinIO and curl directly from official Alpine package repositories
-# Why: Eliminates external CDN blocking (curl exit 22), registry rate limits, and architecture-specific download scripts
-RUN apk add --no-cache minio curl && mkdir -p /data
+# Install MinIO, curl, and tzdata (for precise time/clock synchronization on cloud VMs and runners)
+RUN apk add --no-cache minio curl tzdata && mkdir -p /data
 
-# Expose S3 API port (9000) and Web Console port (9001)
 EXPOSE 9000 9001
 
 VOLUME ["/data"]
