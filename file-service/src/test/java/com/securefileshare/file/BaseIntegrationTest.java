@@ -42,9 +42,7 @@ public abstract class BaseIntegrationTest {
         registry.add("spring.flyway.enabled", () -> "true");
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
 
-        String minioEndpoint = System.getenv().containsKey("CI")
-                ? System.getenv().getOrDefault("MINIO_ENDPOINT", "http://localhost:9000")
-                : "http://" + minio.getHost() + ":" + minio.getMappedPort(9000);
+        String minioEndpoint = "http://" + minio.getHost() + ":" + minio.getMappedPort(9000);
 
         registry.add("minio.endpoint", () -> minioEndpoint);
         registry.add("minio.access-key", () -> "minio_admin");
