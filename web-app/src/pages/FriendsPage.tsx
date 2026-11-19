@@ -1,24 +1,66 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
-import { Users, UserPlus, Copy, Check, ShieldAlert } from 'lucide-react';
+import { Users, UserPlus, Copy, Check, ShieldAlert, RefreshCw } from 'lucide-react';
+import { request } from '../api/client';
+
+interface InviteResponse {
+  id: string;
+  inviteCode: string;
+  expiresAt: string;
+  maxUses: number;
+  useCount: number;
+  revoked: boolean;
+}
 
 export function FriendsPage() {
   const [friendCode, setFriendCode] = useState('');
+  const [inviteUrl, setInviteUrl] = useState<string>('Generating invite...');
+  const [loadingInvite, setLoadingInvite] = useState(false);
   const [copied, setCopied] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleSendRequest = (e: React.FormEvent) => {
+  const generateInvite = async () => {
+    setLoadingInvite(true);
+    setErrorMsg(null);
+    try {
+      const res = await request<{ data: InviteResponse }>('/api/v1/invites', {
+        method: 'POST',
+      });
+      const code = res.data?.inviteCode || (res as any).inviteCode;
+      const fullUrl = `${window.location.origin}/invite/${code}`;
+      setInviteUrl(fullUrl);
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Failed to generate invite link');
+      setInviteUrl('https://securefileshare.com/invite/SFS-INV-DEMO123456');
+    } finally {
+      setLoadingInvite(false);
+    }
+  };
+
+  useEffect(() => {
+    generateInvite();
+  }, []);
+
+  const handleSendRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!friendCode.trim()) return;
-    setSuccessMsg(`Friend request sent to ${friendCode.trim()}!`);
     setErrorMsg(null);
-    setFriendCode('');
+    setSuccessMsg(null);
+    try {
+      await request(`/api/v1/friends/requests?friendCode=${encodeURIComponent(friendCode.trim())}`, {
+        method: 'POST',
+      });
+      setSuccessMsg(`Friend request successfully sent to ${friendCode.trim()}!`);
+      setFriendCode('');
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Failed to send friend request');
+    }
   };
 
   const handleCopyInvite = () => {
-    navigator.clipboard.writeText('https://securefileshare.com/invite/SFS-INV-DEMO123456');
+    navigator.clipboard.writeText(inviteUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -88,7 +130,7 @@ export function FriendsPage() {
                 <input
                   type="text"
                   readOnly
-                  value="https://securefileshare.com/invite/SFS-INV-DEMO123456"
+                  value={inviteUrl}
                   style={{
                     flex: 1,
                     padding: '0.75rem 1rem',
@@ -100,6 +142,9 @@ export function FriendsPage() {
                     outline: 'none',
                   }}
                 />
+                <Button type="button" variant="secondary" onClick={generateInvite} title="Generate New Invite" style={{ padding: '0.75rem' }}>
+                  <RefreshCw size={16} className={loadingInvite ? 'animate-spin' : ''} />
+                </Button>
                 <Button type="button" variant="secondary" onClick={handleCopyInvite} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   {copied ? <Check size={16} color="#34d399" /> : <Copy size={16} />}
                   {copied ? 'Copied' : 'Copy'}
