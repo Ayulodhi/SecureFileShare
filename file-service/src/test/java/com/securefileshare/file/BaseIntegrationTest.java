@@ -20,8 +20,8 @@ public abstract class BaseIntegrationTest {
 
     @Container
     protected static final GenericContainer<?> minio = new GenericContainer<>(
-            new org.testcontainers.images.builder.ImageFromDockerfile()
-                    .withFileFromFile("Dockerfile", new java.io.File("../docker/minio/Dockerfile"))
+            new org.testcontainers.images.builder.ImageFromDockerfile("sfs-minio-test:latest")
+                    .withFileFromFile("Dockerfile", new java.io.File("./docker/minio/Dockerfile"))
     )
             .withExposedPorts(9000)
             .withEnv("MINIO_ROOT_USER", "minio_admin")
