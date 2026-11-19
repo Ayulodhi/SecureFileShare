@@ -6,8 +6,8 @@ import java.util.UUID;
 
 /**
  * JPA entity representing a registered user account in the USERS table.
- * WHAT: Maps user identity, salted password hash, role, and registration timestamp.
- * WHY: Maintains authenticated identities required for issuing tokens and anchoring cryptographic keys.
+ * WHAT: Maps user identity, salted password hash, role, friend code, and registration timestamp.
+ * WHY: Maintains authenticated identities and unique friend codes required for secure sharing.
  */
 @Entity
 @Table(name = "users")
@@ -30,11 +30,15 @@ public class User {
     @Column(nullable = false, length = 30)
     private Role role;
 
+    @Column(name = "friend_code", nullable = false, unique = true, length = 12)
+    private String friendCode;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     public User() {
         this.createdAt = Instant.now();
+        this.friendCode = generateFriendCode();
     }
 
     public User(String username, String email, String passwordHash, Role role) {
@@ -42,6 +46,7 @@ public class User {
         this.email = email;
         this.passwordHash = passwordHash;
         this.role = role;
+        this.friendCode = generateFriendCode();
         this.createdAt = Instant.now();
     }
 
@@ -50,53 +55,33 @@ public class User {
         if (this.createdAt == null) {
             this.createdAt = Instant.now();
         }
+        if (this.friendCode == null || this.friendCode.isBlank()) {
+            this.friendCode = generateFriendCode();
+        }
     }
 
-    public UUID getId() {
-        return id;
+    private static String generateFriendCode() {
+        return "SFS-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
-    public void setId(UUID id) {
-        this.id = id;
-    }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
-    public String getUsername() {
-        return username;
-    }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public String getEmail() {
-        return email;
-    }
+    public String getPasswordHash() { return passwordHash; }
+    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    public Role getRole() { return role; }
+    public void setRole(Role role) { this.role = role; }
 
-    public String getPasswordHash() {
-        return passwordHash;
-    }
+    public String getFriendCode() { return friendCode; }
+    public void setFriendCode(String friendCode) { this.friendCode = friendCode; }
 
-    public void setPasswordHash(String passwordHash) {
-        this.passwordHash = passwordHash;
-    }
-
-    public Role getRole() {
-        return role;
-    }
-
-    public void setRole(Role role) {
-        this.role = role;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

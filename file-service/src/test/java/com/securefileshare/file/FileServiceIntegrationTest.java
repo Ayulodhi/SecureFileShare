@@ -31,6 +31,7 @@ import java.time.Instant;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -44,22 +45,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
-public class FileServiceIntegrationTest {
-
-    private static final String TEST_JWT_SECRET = "super_secret_test_jwt_key_file_service_2026_at_least_32_chars!";
+public class FileServiceIntegrationTest extends BaseIntegrationTest {
 
     @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        // Wire containerized PostgreSQL properties from running Docker environment
-        String host = System.getenv().getOrDefault("POSTGRES_HOST", "localhost");
-        String port = System.getenv().getOrDefault("POSTGRES_PORT", "5432");
-        String user = System.getenv().getOrDefault("POSTGRES_USER", "sfs_admin");
-        String pass = System.getenv().getOrDefault("POSTGRES_PASSWORD", "sfs_secure_pass_2026");
-
-        registry.add("spring.datasource.url", () -> "jdbc:postgresql://" + host + ":" + port + "/sfs_file");
-        registry.add("spring.datasource.username", () -> user);
-        registry.add("spring.datasource.password", () -> pass);
-
+    static void configureExtraProperties(DynamicPropertyRegistry registry) {
         // Wire containerized MinIO properties from running Docker environment
         String minioEndpoint = System.getenv().getOrDefault("MINIO_ENDPOINT", "http://localhost:9000");
         String minioUser = System.getenv().getOrDefault("MINIO_ROOT_USER", "minio_admin");
@@ -71,7 +60,6 @@ public class FileServiceIntegrationTest {
         registry.add("minio.bucket-name", () -> "secure-files");
 
         // Wire security and file properties
-        registry.add("security.jwt.secret", () -> TEST_JWT_SECRET);
         registry.add("security.jwt.expiration-ms", () -> 3600000L);
         registry.add("file.max-size-bytes", () -> 104857600L);
         registry.add("services.auth.url", () -> "http://localhost:8081");
@@ -119,7 +107,7 @@ public class FileServiceIntegrationTest {
                 Instant.now(),
                 false
         );
-        when(authServiceClient.getActiveKeys(eq(ownerId))).thenReturn(keyResponse);
+        when(authServiceClient.getActiveKeys(any(UUID.class))).thenReturn(keyResponse);
     }
 
     @Test
@@ -313,12 +301,12 @@ public class FileServiceIntegrationTest {
 
         assertThat(dispatchedRecipient.getResponse().getContentAsByteArray()).isEqualTo(ciphertext);
 
-        // Step 5: Unauthorized third-party user cannot retrieve package (403 Forbidden)
+        // Step 5: Unauthorized third-party user cannot retrieve package (404 Not Found, identical to missing file)
         UUID unauthorizedUserId = UUID.randomUUID();
         String unauthorizedToken = generateTestJwt(unauthorizedUserId, "attacker", "ROLE_SENDER_RECIPIENT");
         mockMvc.perform(get("/files/{id}/package", fileId)
                         .header("Authorization", "Bearer " + unauthorizedToken))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isNotFound());
 
         // Step 6: Non-owner cannot add recipient keys (403 Forbidden)
         AddFileKeyRequest illegalKeyRequest = new AddFileKeyRequest(UUID.randomUUID(), "IllegalKey==");

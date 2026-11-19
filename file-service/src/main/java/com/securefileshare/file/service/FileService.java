@@ -206,6 +206,23 @@ public class FileService {
     }
 
     /**
+     * Lists all files shared with the authenticated recipient.
+     * WHAT: Retrieves metadata for files where the caller holds a valid FileKey share grant.
+     * WHY: Powers the GET /files/shared-with-me endpoint.
+     *
+     * @param recipientId Authenticated recipient UUID
+     * @return List of FileMetadataResponse DTOs
+     */
+    @Transactional(readOnly = true)
+    public List<FileMetadataResponse> listSharedFiles(UUID recipientId) {
+        log.debug("Listing shared files for recipient {}", recipientId);
+        List<FileRecord> records = fileRepository.findSharedFilesForRecipient(recipientId);
+        return records.stream()
+                .map(FileMetadataResponse::fromEntity)
+                .toList();
+    }
+
+    /**
      * Retrieves the complete encrypted file package for decryption on the caller's device.
      * WHAT: Validates caller authorization (owner or valid recipient share), retrieves caller's wrapped AES key,
      *      and returns a streaming connection to the MinIO ciphertext.
@@ -230,8 +247,8 @@ public class FileService {
 
         if (!isOwner && !hasValidShare) {
             log.warn("Access denied: user {} attempted to retrieve file {} owned by {}", callerId, fileId, record.getOwnerId());
-            throw new ApiException(HttpStatus.FORBIDDEN,
-                    "Access denied: caller is neither file owner nor authorized recipient");
+            throw new ApiException(HttpStatus.NOT_FOUND,
+                    "File not found with ID: " + fileId);
         }
 
         // Fetch the caller's specific wrapped AES key
@@ -289,6 +306,27 @@ public class FileService {
         }
 
         return FileKeyResponse.fromEntity(savedKey);
+    }
+
+    @Transactional
+    public void deleteFile(UUID fileId, UUID callerId) {
+        log.info("User {} requesting deletion of file {}", callerId, fileId);
+        FileRecord record = fileRepository.findById(fileId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "File not found"));
+
+        if (!record.getOwnerId().equals(callerId)) {
+            log.warn("Unauthorized delete attempt by user {} on file {} owned by {}", callerId, fileId, record.getOwnerId());
+            throw new ApiException(HttpStatus.NOT_FOUND, "File not found");
+        }
+
+        try {
+            minioStorageService.deleteObject(record.getObjectKey());
+        } catch (Exception e) {
+            log.warn("Failed to delete object from MinIO storage: {}", e.getMessage());
+        }
+
+        fileRepository.delete(record);
+        log.info("File {} deleted successfully by owner {}", fileId, callerId);
     }
 
     /**

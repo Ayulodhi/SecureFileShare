@@ -21,6 +21,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Service managing append-only hash-chained audit logs and verification.
@@ -34,6 +35,7 @@ public class AuditService {
     private static final String GENESIS_PREV_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
 
     private final AuditRepository auditRepository;
+    private final ReentrantLock lock = new ReentrantLock();
 
     public AuditService(AuditRepository auditRepository) {
         this.auditRepository = auditRepository;
@@ -90,12 +92,14 @@ public class AuditService {
             }
 
             Instant normalizedTimestamp = record.getTimestamp().truncatedTo(ChronoUnit.MILLIS);
+            int version = record.getHashVersion();
             String computedHash = computeEntryHash(
                     record.getPreviousHash(),
                     normalizedTimestamp,
                     record.getActor(),
                     record.getAction(),
-                    record.getFileName()
+                    record.getFileName(),
+                    version
             );
 
             if (!computedHash.equals(record.getHash())) {
@@ -124,28 +128,39 @@ public class AuditService {
      * Appends a new audit event to the hash chain.
      */
     @Transactional
-    public synchronized AuditEntryDto logEvent(LogEventRequest request) {
-        Optional<AuditRecord> lastRecord = auditRepository.findTopByOrderByIdDesc();
-        String previousHash = lastRecord.map(AuditRecord::getHash).orElse(GENESIS_PREV_HASH);
+    public AuditEntryDto logEvent(LogEventRequest request) {
+        lock.lock();
+        try {
+            Optional<AuditRecord> lastRecord = auditRepository.findFirstByOrderByIdDesc();
+            String previousHash = lastRecord.map(AuditRecord::getHash).orElse(GENESIS_PREV_HASH);
 
-        Instant timestamp = Instant.now().truncatedTo(ChronoUnit.MILLIS);
-        String actor = request.getActor();
-        String action = request.getAction();
-        String fileName = request.getFileName();
+            Instant timestamp = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+            String actor = request.getActor();
+            String action = request.getAction();
+            String fileName = request.getFileName();
 
-        String hash = computeEntryHash(previousHash, timestamp, actor, action, fileName);
+            int version = 2;
+            String hash = computeEntryHash(previousHash, timestamp, actor, action, fileName, version);
 
-        AuditRecord record = new AuditRecord(timestamp, actor, action, fileName, hash, previousHash);
-        AuditRecord saved = auditRepository.save(record);
+            AuditRecord record = new AuditRecord(timestamp, actor, action, fileName, hash, previousHash, version);
+            AuditRecord saved = auditRepository.save(record);
 
-        log.info("Logged audit event #{}: {} by {} on {}", saved.getId(), action, actor, fileName);
-        return AuditEntryDto.fromEntity(saved);
+            log.info("Logged audit event #{}: {} by {} on {}", saved.getId(), action, actor, fileName);
+            return AuditEntryDto.fromEntity(saved);
+        } finally {
+            lock.unlock();
+        }
     }
 
-    private String computeEntryHash(String previousHash, Instant timestamp, String actor, String action, String fileName) {
+    private String computeEntryHash(String previousHash, Instant timestamp, String actor, String action, String fileName, int version) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            String payload = previousHash + timestamp.toString() + actor + action + fileName;
+            String payload;
+            if (version == 1) {
+                payload = previousHash + timestamp.toString() + actor + action + fileName;
+            } else {
+                payload = previousHash + "|" + timestamp.toString() + "|" + actor + "|" + action + "|" + fileName + "|v2";
+            }
             byte[] hashBytes = digest.digest(payload.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(hashBytes);
         } catch (NoSuchAlgorithmException e) {

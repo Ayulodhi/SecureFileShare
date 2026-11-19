@@ -84,10 +84,21 @@ export async function request<T>(
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const response = await fetch(endpoint, {
-    ...options,
-    headers,
-  });
+  const isProduction = (typeof import.meta !== 'undefined' && (import.meta as any).env?.PROD) ||
+    (typeof globalThis !== 'undefined' && (globalThis as any).process?.env?.NODE_ENV === 'production');
+
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      ...options,
+      headers,
+    });
+  } catch (networkError) {
+    if (isProduction) {
+      throw new ApiException(503, 'NetworkError', 'Production API request failed: ' + (networkError instanceof Error ? networkError.message : String(networkError)));
+    }
+    throw networkError;
+  }
 
   // Handle No-Content
   if (response.status === 204) {

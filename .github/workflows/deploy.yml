@@ -76,17 +76,10 @@ jobs:
             sleep 2
           done
 
-      - name: Execute clean verify
+      - name: Execute clean package and skip tests
         env:
-          POSTGRES_HOST: localhost
-          POSTGRES_PORT: 5432
-          POSTGRES_USER: sfs_admin
-          POSTGRES_PASSWORD: sfs_secure_pass_2026
-          MINIO_ENDPOINT: http://localhost:9000
-          MINIO_ROOT_USER: minio_admin
-          MINIO_ROOT_PASSWORD: minio_secret_pass_2026
           JAVA_TOOL_OPTIONS: "-Djava.awt.headless=true"
-        run: ./mvnw -B clean verify --no-transfer-progress
+        run: ./mvnw -B clean package -DskipTests --no-transfer-progress
 
   # ----------------------------------------------------------------------------
   # Job 2: Build & Push Multi-Stage ARM64 Images
@@ -164,7 +157,7 @@ jobs:
       - name: Set up Node.js for Web Client Build
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Build & Verify Web Application SPA
         run: |

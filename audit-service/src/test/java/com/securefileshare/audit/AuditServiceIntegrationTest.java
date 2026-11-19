@@ -31,22 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
-public class AuditServiceIntegrationTest {
-
-    private static final String TEST_JWT_SECRET = "super_secret_test_jwt_key_audit_service_2026_at_least_32_chars!";
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        String host = System.getenv().getOrDefault("POSTGRES_HOST", "localhost");
-        String port = System.getenv().getOrDefault("POSTGRES_PORT", "5432");
-        String user = System.getenv().getOrDefault("POSTGRES_USER", "sfs_admin");
-        String pass = System.getenv().getOrDefault("POSTGRES_PASSWORD", "sfs_secure_pass_2026");
-
-        registry.add("spring.datasource.url", () -> "jdbc:postgresql://" + host + ":" + port + "/sfs_audit");
-        registry.add("spring.datasource.username", () -> user);
-        registry.add("spring.datasource.password", () -> pass);
-        registry.add("security.jwt.secret", () -> TEST_JWT_SECRET);
-    }
+public class AuditServiceIntegrationTest extends BaseAuditIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -120,6 +105,34 @@ public class AuditServiceIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data[0].action").isNotEmpty());
+    }
+
+    @Test
+    @DisplayName("Audit ingestion authentication: No credential -> 401; User JWT -> 403; Valid service key -> 201")
+    void testAuditIngestionAuthentication() throws Exception {
+        LogEventRequest event = new LogEventRequest("bot", "SYSTEM_CHECK", "none");
+        String userToken = generateTestJwt(UUID.randomUUID(), "user", "ROLE_SENDER_RECIPIENT");
+
+        // 1. No credential -> 401 Unauthorized
+        mockMvc.perform(post("/audit/events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(event)))
+                .andExpect(status().isUnauthorized());
+
+        // 2. User JWT without service key -> 403 Forbidden
+        mockMvc.perform(post("/audit/events")
+                        .header("Authorization", "Bearer " + userToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(event)))
+                .andExpect(status().isForbidden());
+
+        // 3. Valid service key -> 201 Created
+        mockMvc.perform(post("/audit/events")
+                        .header("X-Service-Key", "sfs_service_audit_secret_2026")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(event)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true));
     }
 
     private String generateTestJwt(UUID userId, String username, String role) {

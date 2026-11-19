@@ -3,21 +3,23 @@ package com.securefileshare.share;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.securefileshare.share.dto.CreateShareRequest;
+import com.securefileshare.share.entity.ShareRecord;
+import com.securefileshare.share.repository.ShareRepository;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 
@@ -32,28 +34,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
-public class ShareServiceIntegrationTest {
-
-    private static final String TEST_JWT_SECRET = "super_secret_test_jwt_key_share_service_2026_at_least_32_chars!";
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        String host = System.getenv().getOrDefault("POSTGRES_HOST", "localhost");
-        String port = System.getenv().getOrDefault("POSTGRES_PORT", "5432");
-        String user = System.getenv().getOrDefault("POSTGRES_USER", "sfs_admin");
-        String pass = System.getenv().getOrDefault("POSTGRES_PASSWORD", "sfs_secure_pass_2026");
-
-        registry.add("spring.datasource.url", () -> "jdbc:postgresql://" + host + ":" + port + "/sfs_share");
-        registry.add("spring.datasource.username", () -> user);
-        registry.add("spring.datasource.password", () -> pass);
-        registry.add("security.jwt.secret", () -> TEST_JWT_SECRET);
-    }
+public class ShareServiceIntegrationTest extends BaseShareIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private ShareRepository shareRepository;
+
+    @BeforeEach
+    void setUp() {
+        shareRepository.deleteAll();
+    }
 
     @Test
     @DisplayName("Verify health endpoint returns UP for share-service")
@@ -95,7 +90,6 @@ public class ShareServiceIntegrationTest {
         String shareId = json.path("data").path("id").asText();
         String shareLink = json.path("data").path("shareLink").asText();
 
-        // Extract token from shareLink (format: http://.../share/{token})
         String token = shareLink.substring(shareLink.lastIndexOf('/') + 1);
         assertThat(token).isNotBlank();
 
@@ -107,7 +101,7 @@ public class ShareServiceIntegrationTest {
                 .andExpect(jsonPath("$.data[0].id").value(shareId))
                 .andExpect(jsonPath("$.data[0].fileName").value("confidential_doc.pdf"));
 
-        // 3. Public token resolution (unauthenticated recipient resolving share link)
+        // 3. Public token resolution
         mockMvc.perform(get("/shares/token/" + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -120,8 +114,34 @@ public class ShareServiceIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
-        // 5. Resolving revoked token should fail (403 Forbidden)
+        // 5. Resolving revoked token -> 403 Forbidden
         mockMvc.perform(get("/shares/token/" + token))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Revoked share test: attempting to resolve a revoked share token returns 403 Forbidden")
+    void testRevokedShareReturnsForbidden() throws Exception {
+        ShareRecord record = new ShareRecord(
+                "sr_revoked1", UUID.randomUUID(), UUID.randomUUID(), "doc.pdf", "bob", "revoked_token_123", Instant.now().plusSeconds(3600)
+        );
+        record.setStatus("REVOKED");
+        shareRepository.save(record);
+
+        mockMvc.perform(get("/shares/token/revoked_token_123"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Expired share test: attempting to resolve an expired share token returns 403 Forbidden")
+    void testExpiredShareReturnsForbidden() throws Exception {
+        ShareRecord record = new ShareRecord(
+                "sr_expired1", UUID.randomUUID(), UUID.randomUUID(), "doc.pdf", "bob", "expired_token_123", Instant.now().minusSeconds(3600)
+        );
+        record.setStatus("ACTIVE");
+        shareRepository.save(record);
+
+        mockMvc.perform(get("/shares/token/expired_token_123"))
                 .andExpect(status().isForbidden());
     }
 

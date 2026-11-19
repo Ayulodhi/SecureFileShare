@@ -1,0 +1,34 @@
+package com.securefileshare.audit;
+
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+@Testcontainers
+public abstract class BaseAuditIntegrationTest {
+
+    protected static final String TEST_JWT_SECRET = "super_secret_test_jwt_key_audit_service_2026_at_least_32_chars!";
+
+    @Container
+    protected static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
+            .withDatabaseName("sfs_audit")
+            .withUsername("sfs_admin")
+            .withPassword("sfs_secure_pass_2026");
+
+    @DynamicPropertySource
+    static void configureProperties(DynamicPropertyRegistry registry) {
+        String jdbcUrl = System.getenv().containsKey("CI")
+                ? "jdbc:postgresql://localhost:5432/sfs_audit"
+                : postgres.getJdbcUrl().replace("localhost", "127.0.0.1");
+
+        registry.add("spring.datasource.url", () -> jdbcUrl);
+        registry.add("spring.datasource.username", () -> System.getenv().containsKey("CI") ? "sfs_admin" : postgres.getUsername());
+        registry.add("spring.datasource.password", () -> System.getenv().containsKey("CI") ? "sfs_secure_pass_2026" : postgres.getPassword());
+        registry.add("spring.flyway.enabled", () -> "true");
+        registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
+
+        registry.add("security.jwt.secret", () -> TEST_JWT_SECRET);
+    }
+}

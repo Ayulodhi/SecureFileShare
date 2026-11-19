@@ -42,9 +42,22 @@ public class RealAuditApi implements AuditApi {
 
     public RealAuditApi(AppConfig appConfig) {
         this.appConfig = appConfig;
-        this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(5))
-                .build();
+        HttpClient client;
+        try {
+            javax.net.ssl.SSLContext sslContext = javax.net.ssl.SSLContext.getInstance("TLS");
+            javax.net.ssl.TrustManager[] trustManagers = new javax.net.ssl.TrustManager[] {
+                new com.securefileshare.client.api.PinningTrustManager(appConfig.getTlsPin())
+            };
+            sslContext.init(null, trustManagers, new java.security.SecureRandom());
+
+            client = HttpClient.newBuilder()
+                    .sslContext(sslContext)
+                    .connectTimeout(Duration.ofSeconds(5))
+                    .build();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize TLS pinning SSLContext", e);
+        }
+        this.httpClient = client;
         this.objectMapper = new ObjectMapper();
     }
 

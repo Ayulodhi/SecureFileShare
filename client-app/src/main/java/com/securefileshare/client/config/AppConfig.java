@@ -32,11 +32,15 @@ public class AppConfig {
 
     private static final AppConfig INSTANCE = new AppConfig();
 
+    public static final String KEY_TLS_PIN = "tls.pin";
+    private static final String DEFAULT_TLS_PIN = "sha256/CD1EAD30476DDBE0ACE01CA280CAE2774E3ED8A8";
+
     private String mode;
     private String authServiceUrl;
     private String fileServiceUrl;
     private String shareServiceUrl;
     private String auditServiceUrl;
+    private String tlsPin;
 
     /**
      * Constructs AppConfig and automatically loads configuration from classpath.
@@ -66,6 +70,7 @@ public class AppConfig {
         this.fileServiceUrl = DEFAULT_FILE_URL;
         this.shareServiceUrl = DEFAULT_SHARE_URL;
         this.auditServiceUrl = DEFAULT_AUDIT_URL;
+        this.tlsPin = DEFAULT_TLS_PIN;
     }
 
     /**
@@ -112,6 +117,7 @@ public class AppConfig {
         this.fileServiceUrl = props.getProperty(KEY_FILE_URL, this.fileServiceUrl != null ? this.fileServiceUrl : DEFAULT_FILE_URL).trim();
         this.shareServiceUrl = props.getProperty(KEY_SHARE_URL, this.shareServiceUrl != null ? this.shareServiceUrl : DEFAULT_SHARE_URL).trim();
         this.auditServiceUrl = props.getProperty(KEY_AUDIT_URL, this.auditServiceUrl != null ? this.auditServiceUrl : DEFAULT_AUDIT_URL).trim();
+        this.tlsPin = props.getProperty(KEY_TLS_PIN, this.tlsPin != null ? this.tlsPin : DEFAULT_TLS_PIN).trim();
     }
 
     /**
@@ -161,5 +167,13 @@ public class AppConfig {
 
     public void setAuditServiceUrl(String auditServiceUrl) {
         this.auditServiceUrl = auditServiceUrl;
+    }
+
+    public String getTlsPin() {
+        return tlsPin;
+    }
+
+    public void setTlsPin(String tlsPin) {
+        this.tlsPin = tlsPin;
     }
 }

@@ -5,8 +5,8 @@ import java.time.Instant;
 
 /**
  * JPA entity mapping to the AUDIT_ENTRIES database table.
- * WHAT: Persists immutable, hash-chained audit entries.
- * WHY: Provides tamper-evident compliance logging.
+ * WHAT: Persists immutable, hash-chained audit entries with hash version support.
+ * WHY: Provides tamper-evident compliance logging supporting mixed V1/V2 hash chains.
  */
 @Entity
 @Table(name = "audit_entries")
@@ -34,6 +34,9 @@ public class AuditRecord {
     @Column(name = "previous_hash", nullable = false, length = 64)
     private String previousHash;
 
+    @Column(name = "hash_version", nullable = false)
+    private int hashVersion = 2;
+
     public AuditRecord() {}
 
     public AuditRecord(Instant timestamp, String actor, String action, String fileName, String hash, String previousHash) {
@@ -43,6 +46,17 @@ public class AuditRecord {
         this.fileName = fileName;
         this.hash = hash;
         this.previousHash = previousHash;
+        this.hashVersion = 2;
+    }
+
+    public AuditRecord(Instant timestamp, String actor, String action, String fileName, String hash, String previousHash, int hashVersion) {
+        this.timestamp = timestamp;
+        this.actor = actor;
+        this.action = action;
+        this.fileName = fileName;
+        this.hash = hash;
+        this.previousHash = previousHash;
+        this.hashVersion = hashVersion;
     }
 
     public Long getId() { return id; }
@@ -52,4 +66,5 @@ public class AuditRecord {
     public String getFileName() { return fileName; }
     public String getHash() { return hash; }
     public String getPreviousHash() { return previousHash; }
+    public int getHashVersion() { return hashVersion; }
 }
