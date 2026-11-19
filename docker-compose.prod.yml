@@ -253,8 +253,6 @@ services:
       SERVICES_AUDIT_URL: http://audit-service:8084/api/v1
       AUDIT_SERVICE_KEY: ${AUDIT_SERVICE_KEY}
       JWT_SECRET: ${JWT_SECRET}
-      SERVICES_AUDIT_URL: http://audit-service:8084/api/v1
-      AUDIT_SERVICE_KEY: ${AUDIT_SERVICE_KEY}
       JAVA_OPTS: "-XX:+UseContainerSupport -Xms128m -Xmx384m -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
     networks:
       - sfs_prod_internal
@@ -265,8 +263,6 @@ services:
       audit-service:
         condition: service_healthy
       minio:
-        condition: service_healthy
-      audit-service:
         condition: service_healthy
     deploy:
       resources:
