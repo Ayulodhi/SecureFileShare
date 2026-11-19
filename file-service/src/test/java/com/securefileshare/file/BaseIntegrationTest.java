@@ -26,7 +26,9 @@ public abstract class BaseIntegrationTest {
             .withExposedPorts(9000)
             .withEnv("MINIO_ROOT_USER", "minio_admin")
             .withEnv("MINIO_ROOT_PASSWORD", "minio_secure_pass_2026")
-            .withCommand("server", "/data");
+            .withEnv("MINIO_ACCESS_KEY", "minio_admin")
+            .withEnv("MINIO_SECRET_KEY", "minio_secure_pass_2026")
+            .withCommand("server", "/data", "--console-address", ":9001");
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
