@@ -31,6 +31,7 @@ import java.time.Instant;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -106,7 +107,7 @@ public class FileServiceIntegrationTest extends BaseIntegrationTest {
                 Instant.now(),
                 false
         );
-        when(authServiceClient.getActiveKeys(eq(ownerId))).thenReturn(keyResponse);
+        when(authServiceClient.getActiveKeys(any(UUID.class))).thenReturn(keyResponse);
     }
 
     @Test
