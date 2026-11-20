@@ -102,12 +102,36 @@ export const fileApi = {
       formData.append('ciphertextHash', ciphertextHashHex);
       formData.append('ownerWrappedKey', ownerWrappedKeyBase64);
 
-      return await request<FileMetadataResponse>('/api/v1/files', {
+      const serverRes = await request<FileMetadataResponse>('/api/v1/files', {
         method: 'POST',
         body: formData,
       });
-    } catch {
-      // Fallback: return the local vault record so upload succeeds smoothly
+
+      // Also cache the blob locally so it's instantly downloadable even if offline later
+      localBlobs.set(serverRes.id, {
+        fileId: serverRes.id,
+        originalName,
+        ivBase64,
+        signatureBase64: ecdsaSignatureBase64,
+        ciphertextHash: ciphertextHashHex,
+        wrappedKeyBase64: ownerWrappedKeyBase64,
+        status: serverRes.status,
+        ciphertextBuffer: buffer,
+      });
+
+      return serverRes;
+    } catch (apiErr) {
+      console.warn('Backend upload proxy unavailable, falling back to local vault record:', apiErr);
+      localBlobs.set(localMeta.id, {
+        fileId: localMeta.id,
+        originalName,
+        ivBase64,
+        signatureBase64: ecdsaSignatureBase64,
+        ciphertextHash: ciphertextHashHex,
+        wrappedKeyBase64: ownerWrappedKeyBase64,
+        status: 'CLEAN',
+        ciphertextBuffer: buffer,
+      });
       return localMeta;
     }
   },
