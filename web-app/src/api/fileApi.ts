@@ -135,45 +135,56 @@ export const fileApi = {
       return cached;
     }
 
-    try {
-      const token = getAuthToken();
-      const headers = new Headers();
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
-      }
+    const token = getAuthToken();
+    const headers = new Headers();
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
 
-      const response = await fetch(`/api/v1/files/${fileId}/package`, {
+    let response: Response;
+    try {
+      response = await fetch(`/api/v1/files/${fileId}/package`, {
         method: 'GET',
         headers,
       });
-
-      if (!response.ok) {
-        throw new Error('Remote download failed');
-      }
-
-      const ivBase64 = response.headers.get('X-File-IV') || '';
-      const wrappedKeyBase64 = response.headers.get('X-File-Wrapped-Key') || '';
-      const originalName = response.headers.get('X-File-Original-Name') || 'decrypted_file';
-      const signatureBase64 = response.headers.get('X-File-Signature') || '';
-      const ciphertextHash = response.headers.get('X-File-Hash') || '';
-      const status = response.headers.get('X-File-Status') || 'CLEAN';
-
-      const ciphertextBuffer = await response.arrayBuffer();
-
-      return {
-        fileId,
-        originalName,
-        ivBase64,
-        wrappedKeyBase64,
-        signatureBase64,
-        ciphertextHash,
-        status,
-        ciphertextBuffer,
-      };
-    } catch {
+    } catch (networkErr) {
       if (cached) return cached;
-      throw new ApiException(404, 'DownloadError', 'Encrypted file package could not be retrieved.');
+      throw new ApiException(503, 'NetworkError', 'Cannot connect to file storage service. Please ensure backend services are running.');
     }
+
+    if (!response.ok) {
+      let errorBody = '';
+      try {
+        errorBody = await response.text();
+      } catch {
+        // ignore
+      }
+      if (cached) return cached;
+      throw new ApiException(response.status, 'DownloadError', errorBody || `Failed to retrieve encrypted package (HTTP ${response.status})`);
+    }
+
+    const ivBase64 = response.headers.get('X-File-IV') || '';
+    const wrappedKeyBase64 = response.headers.get('X-File-Wrapped-Key') || '';
+    const originalName = response.headers.get('X-File-Original-Name') || 'decrypted_file';
+    const signatureBase64 = response.headers.get('X-File-Signature') || '';
+    const ciphertextHash = response.headers.get('X-File-Hash') || '';
+    const status = response.headers.get('X-File-Status') || 'CLEAN';
+
+    const ciphertextBuffer = await response.arrayBuffer();
+
+    const pkg: EncryptedFilePackage = {
+      fileId,
+      originalName,
+      ivBase64,
+      wrappedKeyBase64,
+      signatureBase64,
+      ciphertextHash,
+      status,
+      ciphertextBuffer,
+    };
+
+    localBlobs.set(fileId, pkg);
+    return pkg;
   },
 
   async addRecipientKey(fileId: string, recipientId: string, wrappedKey: string): Promise<void> {
