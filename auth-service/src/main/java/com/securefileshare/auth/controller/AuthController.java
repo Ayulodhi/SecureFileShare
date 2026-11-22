@@ -90,9 +90,9 @@ public class AuthController {
      * @param userId Target user UUID
      * @return ApiResponse containing KeyRegistryResponse
      */
-    @GetMapping("/keys/{userId}")
-    public ResponseEntity<ApiResponse<KeyRegistryResponse>> getKeys(@PathVariable UUID userId) {
-        KeyRegistryResponse response = keyRegistryService.getActiveKeys(userId);
+    @GetMapping("/keys/{identifier}")
+    public ResponseEntity<ApiResponse<KeyRegistryResponse>> getKeys(@PathVariable String identifier) {
+        KeyRegistryResponse response = keyRegistryService.getActiveKeysByIdentifier(identifier);
         return ResponseEntity.ok(ApiResponse.success("Public keys retrieved successfully", response));
     }
 

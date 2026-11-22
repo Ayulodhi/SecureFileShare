@@ -116,4 +116,27 @@ public class KeyRegistryService {
                 keyRegistry.isRevoked()
         );
     }
+
+    /**
+     * Retrieves active public keys for a user identified by UUID, username, or email.
+     */
+    @Transactional(readOnly = true)
+    public KeyRegistryResponse getActiveKeysByIdentifier(String identifier) {
+        User user = null;
+        try {
+            UUID userId = UUID.fromString(identifier);
+            user = userRepository.findById(userId).orElse(null);
+        } catch (IllegalArgumentException ignored) {
+            // Not a UUID
+        }
+
+        if (user == null) {
+            String clean = identifier.toLowerCase().trim();
+            user = userRepository.findByEmail(clean)
+                    .or(() -> userRepository.findByUsername(identifier))
+                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found with identifier: " + identifier));
+        }
+
+        return getActiveKeys(user.getId());
+    }
 }
