@@ -20,7 +20,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Service orchestrating user registration, authentication, token issuance, and logout.
@@ -29,6 +32,8 @@ import java.util.UUID;
  */
 @Service
 public class AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -172,6 +177,24 @@ public class AuthService {
             // Why: Enforces instantaneous session revocation without maintaining a persistent database table
             // Explicitly assert non-null Duration to satisfy Spring Data Redis @NonNull parameter contract
             redisTemplate.opsForValue().set(blacklistKey, "revoked", Objects.requireNonNull(Duration.ofMillis(remainingMillis)));
+        }
+    }
+
+    /**
+     * Sends document share notification or invite email to a recipient.
+     */
+    @Transactional
+    public void sendShareNotification(String recipientIdentifier, String senderUsername, String fileName) {
+        String identifier = recipientIdentifier.toLowerCase().trim();
+        Optional<User> recipient = userRepository.findByEmail(identifier)
+                .or(() -> userRepository.findByUsername(recipientIdentifier));
+
+        if (recipient.isPresent()) {
+            emailService.sendDocumentShareEmail(recipient.get().getEmail(), senderUsername, fileName);
+            log.info("Sent document share notification email to registered user {}", recipient.get().getEmail());
+        } else {
+            emailService.sendDocumentShareInviteEmail(recipientIdentifier, senderUsername, fileName);
+            log.info("Sent document share invite email to non-registered recipient {}", recipientIdentifier);
         }
     }
 }

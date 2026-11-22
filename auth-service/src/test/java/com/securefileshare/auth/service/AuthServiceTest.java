@@ -79,4 +79,30 @@ class AuthServiceTest {
         assertThat(response.getEmail()).isEqualTo("alice@example.com");
         verify(emailService).sendVerificationEmail(anyString(), anyString());
     }
+
+    @Test
+    @DisplayName("Should send document share email when recipient has account")
+    void testSendShareNotificationToRegisteredUser() {
+        String recipientEmail = "bob@example.com";
+        User bob = new User("bob", recipientEmail, "hash", Role.SENDER_RECIPIENT);
+
+        when(userRepository.findByEmail(recipientEmail)).thenReturn(java.util.Optional.of(bob));
+
+        authService.sendShareNotification(recipientEmail, "alice", "document.pdf");
+
+        verify(emailService).sendDocumentShareEmail(recipientEmail, "alice", "document.pdf");
+    }
+
+    @Test
+    @DisplayName("Should send document share invite email when recipient has no account")
+    void testSendShareNotificationToUnregisteredUser() {
+        String unknownEmail = "unknown@example.com";
+
+        when(userRepository.findByEmail(unknownEmail)).thenReturn(java.util.Optional.empty());
+        when(userRepository.findByUsername(unknownEmail)).thenReturn(java.util.Optional.empty());
+
+        authService.sendShareNotification(unknownEmail, "alice", "document.pdf");
+
+        verify(emailService).sendDocumentShareInviteEmail(unknownEmail, "alice", "document.pdf");
+    }
 }

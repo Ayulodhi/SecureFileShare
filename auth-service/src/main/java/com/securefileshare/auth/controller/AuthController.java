@@ -115,6 +115,15 @@ public class AuthController {
     }
 
     /**
+     * Notifies a recipient about a shared document via email (notifies if registered, invites if unregistered).
+     */
+    @PostMapping("/notify-share")
+    public ResponseEntity<ApiResponse<Void>> notifyShare(@Valid @RequestBody NotifyShareRequest request) {
+        authService.sendShareNotification(request.getRecipientIdentifier(), request.getSenderUsername(), request.getFileName());
+        return ResponseEntity.ok(ApiResponse.success("Share notification email processed successfully"));
+    }
+
+    /**
      * Safely extracts the client IP address considering proxy headers (X-Forwarded-For).
      *
      * @param request HttpServletRequest instance
