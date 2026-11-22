@@ -53,24 +53,24 @@ class FriendsServiceTest {
     }
 
     @Test
-    @DisplayName("Should send friend request email when friend request is sent")
-    void testSendFriendRequestTriggersEmail() {
+    @DisplayName("Should send friend request email when friend request is sent by email")
+    void testSendFriendRequestByEmailTriggersEmail() {
         UUID requesterId = UUID.randomUUID();
-        String friendCode = "FRIEND123";
+        String friendEmail = "bob@example.com";
 
         User requester = new User("alice", "alice@example.com", "hash", Role.SENDER_RECIPIENT);
         requester.setId(requesterId);
-        User addressee = new User("bob", "bob@example.com", "hash", Role.SENDER_RECIPIENT);
+        User addressee = new User("bob", friendEmail, "hash", Role.SENDER_RECIPIENT);
         addressee.setId(UUID.randomUUID());
 
         when(userRepository.findById(requesterId)).thenReturn(Optional.of(requester));
-        when(userRepository.findByFriendCode(friendCode)).thenReturn(Optional.of(addressee));
+        when(userRepository.findByEmail(friendEmail)).thenReturn(Optional.of(addressee));
         when(friendRequestRepository.countByRequesterAndStatus(requester, RequestStatus.PENDING)).thenReturn(0L);
         when(friendRequestRepository.findByRequesterAndAddressee(requester, addressee)).thenReturn(Optional.empty());
         when(friendRequestRepository.findByRequesterAndAddressee(addressee, requester)).thenReturn(Optional.empty());
 
-        friendsService.sendFriendRequest(requesterId, friendCode);
+        friendsService.sendFriendRequest(requesterId, friendEmail);
 
-        verify(emailService).sendFriendRequestEmail("bob@example.com", "alice");
+        verify(emailService).sendFriendRequestEmail(friendEmail, "alice");
     }
 }

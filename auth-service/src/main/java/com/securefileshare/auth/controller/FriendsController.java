@@ -24,8 +24,8 @@ public class FriendsController {
     @PostMapping("/requests")
     public ResponseEntity<ApiResponse<Void>> sendFriendRequest(
             @AuthenticationPrincipal UUID userId,
-            @RequestParam String friendCode) {
-        friendsService.sendFriendRequest(userId, friendCode);
+            @RequestParam String email) {
+        friendsService.sendFriendRequest(userId, email);
         return ResponseEntity.ok(ApiResponse.success("Friend request processed successfully"));
     }
 

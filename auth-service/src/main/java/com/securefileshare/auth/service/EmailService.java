@@ -83,4 +83,24 @@ public class EmailService {
             log.error("Failed to send document share email to {}: {}", toEmail, e.getMessage());
         }
     }
+
+    /**
+     * Sends document sharing invite email to non-registered recipient asynchronously.
+     */
+    @Async
+    public void sendDocumentShareInviteEmail(String toEmail, String senderUsername, String documentName) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("Secure File Share - Action Required: Document Shared With You");
+            message.setText("Hello,\n\n" + senderUsername + " has shared a secure document (" + documentName +
+                    ") with you on Secure File Share.\n\n" +
+                    "You do not have an account yet. Please sign up at http://localhost:3000/register to create an account and decrypt your shared file.");
+            mailSender.send(message);
+            log.info("Document share invite email sent successfully to {}", toEmail);
+        } catch (Exception e) {
+            log.error("Failed to send document share invite email to {}: {}", toEmail, e.getMessage());
+        }
+    }
 }

@@ -14,7 +14,7 @@ interface InviteResponse {
 }
 
 export function FriendsPage() {
-  const [friendCode, setFriendCode] = useState('');
+  const [friendEmail, setFriendEmail] = useState('');
   const [inviteUrl, setInviteUrl] = useState<string>('Generating invite...');
   const [loadingInvite, setLoadingInvite] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -51,15 +51,15 @@ export function FriendsPage() {
 
   const handleSendRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!friendCode.trim()) return;
+    if (!friendEmail.trim()) return;
     setErrorMsg(null);
     setSuccessMsg(null);
     try {
-      await request(`/api/v1/friends/requests?friendCode=${encodeURIComponent(friendCode.trim())}`, {
+      await request(`/api/v1/friends/requests?email=${encodeURIComponent(friendEmail.trim())}`, {
         method: 'POST',
       });
-      setSuccessMsg(`Friend request successfully sent to ${friendCode.trim()}!`);
-      setFriendCode('');
+      setSuccessMsg(`Friend request successfully sent to ${friendEmail.trim()}!`);
+      setFriendEmail('');
     } catch (err: any) {
       setErrorMsg(err?.message || 'Failed to send friend request');
     }
@@ -96,17 +96,17 @@ export function FriendsPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
         {/* Add Friend Card */}
-        <Card title="Add Friend" subtitle="Connect using a friend handle or code">
+        <Card title="Add Friend" subtitle="Connect using your friend's email address">
           <form onSubmit={handleSendRequest} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                Friend Code / Handle
+                Friend's Email Address
               </label>
               <input
-                type="text"
-                value={friendCode}
-                onChange={(e) => setFriendCode(e.target.value)}
-                placeholder="e.g. SFS-7X9K"
+                type="email"
+                value={friendEmail}
+                onChange={(e) => setFriendEmail(e.target.value)}
+                placeholder="friend@example.com"
                 style={{
                   width: '100%',
                   padding: '0.75rem 1rem',
