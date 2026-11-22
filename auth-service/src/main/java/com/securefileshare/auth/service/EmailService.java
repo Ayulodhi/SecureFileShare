@@ -8,10 +8,12 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
  * Service responsible for sending transactional emails via Gmail SMTP asynchronously.
  * WHAT: Constructs and dispatches verification emails, friend request notices, and document share alerts without blocking caller transactions.
- * WHY: Prevents SMTP latency or failures from blocking HTTP worker threads or rolling back database transactions.
+ * WHY: Prevents SMTP latency or failures from blocking HTTP worker threads or rolling back database transactions, while returning CompletableFuture for explicit error handling and failure tracking.
  */
 @Service
 public class EmailService {
@@ -32,7 +34,7 @@ public class EmailService {
      * Sends account email verification link / token asynchronously.
      */
     @Async
-    public void sendVerificationEmail(String toEmail, String verificationToken) {
+    public CompletableFuture<Void> sendVerificationEmail(String toEmail, String verificationToken) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
@@ -41,8 +43,12 @@ public class EmailService {
             message.setText("Please verify your account using the following token:\n\n" + verificationToken);
             mailSender.send(message);
             log.info("Verification email sent successfully to {}", toEmail);
+            return CompletableFuture.completedFuture(null);
         } catch (Exception e) {
             log.error("Failed to send verification email to {}: {}", toEmail, e.getMessage());
+            CompletableFuture<Void> future = new CompletableFuture<>();
+            future.completeExceptionally(e);
+            return future;
         }
     }
 
@@ -50,7 +56,7 @@ public class EmailService {
      * Sends friend request notification to recipient email asynchronously.
      */
     @Async
-    public void sendFriendRequestEmail(String toEmail, String senderUsername) {
+    public CompletableFuture<Void> sendFriendRequestEmail(String toEmail, String senderUsername) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
@@ -60,8 +66,12 @@ public class EmailService {
                     ". Log in to your Secure File Share dashboard to accept or decline.");
             mailSender.send(message);
             log.info("Friend request email sent successfully to {}", toEmail);
+            return CompletableFuture.completedFuture(null);
         } catch (Exception e) {
             log.error("Failed to send friend request email to {}: {}", toEmail, e.getMessage());
+            CompletableFuture<Void> future = new CompletableFuture<>();
+            future.completeExceptionally(e);
+            return future;
         }
     }
 
@@ -69,7 +79,7 @@ public class EmailService {
      * Sends document sharing notification digest asynchronously.
      */
     @Async
-    public void sendDocumentShareEmail(String toEmail, String senderUsername, String documentName) {
+    public CompletableFuture<Void> sendDocumentShareEmail(String toEmail, String senderUsername, String documentName) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
@@ -79,8 +89,12 @@ public class EmailService {
                     ") with you. Log in to your dashboard to view and decrypt it.");
             mailSender.send(message);
             log.info("Document share email sent successfully to {}", toEmail);
+            return CompletableFuture.completedFuture(null);
         } catch (Exception e) {
             log.error("Failed to send document share email to {}: {}", toEmail, e.getMessage());
+            CompletableFuture<Void> future = new CompletableFuture<>();
+            future.completeExceptionally(e);
+            return future;
         }
     }
 
@@ -88,7 +102,7 @@ public class EmailService {
      * Sends document sharing invite email to non-registered recipient asynchronously.
      */
     @Async
-    public void sendDocumentShareInviteEmail(String toEmail, String senderUsername, String documentName) {
+    public CompletableFuture<Void> sendDocumentShareInviteEmail(String toEmail, String senderUsername, String documentName) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
@@ -99,8 +113,12 @@ public class EmailService {
                     "You do not have an account yet. Please sign up at http://localhost:3000/register to create an account and decrypt your shared file.");
             mailSender.send(message);
             log.info("Document share invite email sent successfully to {}", toEmail);
+            return CompletableFuture.completedFuture(null);
         } catch (Exception e) {
             log.error("Failed to send document share invite email to {}: {}", toEmail, e.getMessage());
+            CompletableFuture<Void> future = new CompletableFuture<>();
+            future.completeExceptionally(e);
+            return future;
         }
     }
 
@@ -108,7 +126,7 @@ public class EmailService {
      * Sends friend invitation email to non-registered recipient asynchronously.
      */
     @Async
-    public void sendFriendInviteEmail(String toEmail, String senderUsername) {
+    public CompletableFuture<Void> sendFriendInviteEmail(String toEmail, String senderUsername) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
@@ -118,8 +136,12 @@ public class EmailService {
                     "Please sign up at http://localhost:3000/register to create your account and connect with them.");
             mailSender.send(message);
             log.info("Friend invite email sent successfully to unregistered recipient {}", toEmail);
+            return CompletableFuture.completedFuture(null);
         } catch (Exception e) {
             log.error("Failed to send friend invite email to {}: {}", toEmail, e.getMessage());
+            CompletableFuture<Void> future = new CompletableFuture<>();
+            future.completeExceptionally(e);
+            return future;
         }
     }
 }

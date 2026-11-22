@@ -83,4 +83,14 @@ class EmailServiceTest {
         assertThat(sentMessage.getText()).contains(docName);
         assertThat(sentMessage.getFrom()).isEqualTo(fromEmail);
     }
+
+    @Test
+    @DisplayName("Should complete exceptionally when mail sending fails")
+    void testSendEmailFailureHandling() {
+        Mockito.doThrow(new RuntimeException("SMTP Server down")).when(mailSender).send(Mockito.any(SimpleMailMessage.class));
+
+        var future = emailService.sendVerificationEmail("user@example.com", "token");
+
+        assertThat(future).isCompletedExceptionally();
+    }
 }
