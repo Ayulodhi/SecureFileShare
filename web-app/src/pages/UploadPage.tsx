@@ -4,6 +4,7 @@ import { getUserKeys } from '../crypto/keyVault';
 import { encryptFilePayload } from '../crypto/webCryptoService';
 import { authApi } from '../api/authApi';
 import { fileApi } from '../api/fileApi';
+import { shareApi } from '../api/shareApi';
 import { showToast } from '../components/Toast';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
@@ -97,7 +98,7 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
       );
 
       setProgressStep('Uploading encrypted ciphertext blob...');
-      await fileApi.uploadEncryptedFile(
+      const uploadedFile = await fileApi.uploadEncryptedFile(
         encryptedPackage.ciphertextBlob,
         selectedFile.name,
         encryptedPackage.ivBase64,
@@ -105,6 +106,20 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
         encryptedPackage.ciphertextHashHex,
         encryptedPackage.ownerWrappedKeyBase64
       );
+
+      if (!isSelf && recipientUsername.trim()) {
+        setProgressStep(`Notifying recipient "${recipientUsername.trim()}" via email...`);
+        try {
+          await shareApi.createShare({
+            fileId: uploadedFile.id,
+            fileName: selectedFile.name,
+            recipientUsername: recipientUsername.trim(),
+            expiryOption: '24 hours',
+          });
+        } catch (shareErr) {
+          console.error('Auto-share notification error:', shareErr);
+        }
+      }
 
       showToast(`"${selectedFile.name}" encrypted and uploaded successfully.`, 'success');
       setSelectedFile(null);
@@ -473,13 +488,13 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
                     color: 'var(--text-secondary)',
                   }}
                 >
-                  Recipient Username
+                  Recipient Email or Username
                 </label>
                 <div style={{ position: 'relative' }}>
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="Enter registered recipient username (e.g. alice)"
+                    placeholder="friend@example.com or username"
                     value={recipientUsername}
                     onChange={(e) => setRecipientUsername(e.target.value)}
                     style={{ paddingLeft: '2.5rem' }}

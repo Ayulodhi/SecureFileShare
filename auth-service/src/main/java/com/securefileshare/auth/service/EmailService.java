@@ -103,4 +103,23 @@ public class EmailService {
             log.error("Failed to send document share invite email to {}: {}", toEmail, e.getMessage());
         }
     }
+
+    /**
+     * Sends friend invitation email to non-registered recipient asynchronously.
+     */
+    @Async
+    public void sendFriendInviteEmail(String toEmail, String senderUsername) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("Secure File Share - Friend Invitation");
+            message.setText("Hello,\n\n" + senderUsername + " has invited you to connect on Secure File Share.\n\n" +
+                    "Please sign up at http://localhost:3000/register to create your account and connect with them.");
+            mailSender.send(message);
+            log.info("Friend invite email sent successfully to unregistered recipient {}", toEmail);
+        } catch (Exception e) {
+            log.error("Failed to send friend invite email to {}: {}", toEmail, e.getMessage());
+        }
+    }
 }
