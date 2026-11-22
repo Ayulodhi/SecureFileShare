@@ -92,6 +92,10 @@ export const shareApi = {
     }
   },
 
+  async createShare(req: CreateShareRequest): Promise<ShareRecord> {
+    return this.createShareLink(req);
+  },
+
   async revokeShare(shareId: string): Promise<void> {
     try {
       await request<void>(`/api/v1/shares/${shareId}`, { method: 'DELETE' });
