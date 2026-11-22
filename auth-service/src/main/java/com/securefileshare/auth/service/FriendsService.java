@@ -55,9 +55,16 @@ public class FriendsService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Requester not found"));
 
         String identifier = emailOrFriendCode.toLowerCase().trim();
-        User addressee = userRepository.findByEmail(identifier)
-                .or(() -> userRepository.findByFriendCode(emailOrFriendCode))
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found with email: " + emailOrFriendCode));
+        Optional<User> addresseeOpt = userRepository.findByEmail(identifier)
+                .or(() -> userRepository.findByFriendCode(emailOrFriendCode));
+
+        if (addresseeOpt.isEmpty()) {
+            emailService.sendFriendInviteEmail(emailOrFriendCode, requester.getUsername());
+            log.info("Sent friend invite email to unregistered recipient {}", emailOrFriendCode);
+            return;
+        }
+
+        User addressee = addresseeOpt.get();
 
         if (requester.getId().equals(addressee.getId())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Cannot send friend request to yourself");

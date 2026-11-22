@@ -73,4 +73,22 @@ class FriendsServiceTest {
 
         verify(emailService).sendFriendRequestEmail(friendEmail, "alice");
     }
+
+    @Test
+    @DisplayName("Should send friend invite email when email is not registered")
+    void testSendFriendRequestUnregisteredEmailTriggersInvite() {
+        UUID requesterId = UUID.randomUUID();
+        String unregisteredEmail = "stranger@example.com";
+
+        User requester = new User("alice", "alice@example.com", "hash", Role.SENDER_RECIPIENT);
+        requester.setId(requesterId);
+
+        when(userRepository.findById(requesterId)).thenReturn(Optional.of(requester));
+        when(userRepository.findByEmail(unregisteredEmail)).thenReturn(Optional.empty());
+        when(userRepository.findByFriendCode(unregisteredEmail)).thenReturn(Optional.empty());
+
+        friendsService.sendFriendRequest(requesterId, unregisteredEmail);
+
+        verify(emailService).sendFriendInviteEmail(unregisteredEmail, "alice");
+    }
 }
