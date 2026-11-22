@@ -2,6 +2,7 @@ package com.securefileshare.auth;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 /**
  * Main Spring Boot Application Entrypoint for Auth Service.
@@ -9,6 +10,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * WHY: Serves as the central security and authentication authority for SecureFileShare.
  */
 @SpringBootApplication
+@EnableAsync
 public class AuthServiceApplication {
 
     /**

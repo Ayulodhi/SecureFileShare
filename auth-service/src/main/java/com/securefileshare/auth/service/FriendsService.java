@@ -29,15 +29,18 @@ public class FriendsService {
     private final FriendRequestRepository friendRequestRepository;
     private final FriendshipRepository friendshipRepository;
     private final InviteRepository inviteRepository;
+    private final EmailService emailService;
 
     public FriendsService(UserRepository userRepository,
                           FriendRequestRepository friendRequestRepository,
                           FriendshipRepository friendshipRepository,
-                          InviteRepository inviteRepository) {
+                          InviteRepository inviteRepository,
+                          EmailService emailService) {
         this.userRepository = userRepository;
         this.friendRequestRepository = friendRequestRepository;
         this.friendshipRepository = friendshipRepository;
         this.inviteRepository = inviteRepository;
+        this.emailService = emailService;
     }
 
     @Transactional(readOnly = true)
@@ -96,6 +99,10 @@ public class FriendsService {
         } else {
             friendRequestRepository.save(new FriendRequest(requester, addressee, RequestStatus.PENDING));
         }
+
+        // Send friend request email notification
+        emailService.sendFriendRequestEmail(addressee.getEmail(), requester.getUsername());
+
         log.info("Friend request sent from {} to {}", requesterId, addressee.getId());
     }
 

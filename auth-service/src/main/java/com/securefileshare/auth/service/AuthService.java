@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Service orchestrating user registration, authentication, token issuance, and logout.
@@ -35,6 +36,7 @@ public class AuthService {
     private final RateLimiterService rateLimiterService;
     private final StringRedisTemplate redisTemplate;
     private final AuditServiceClient auditServiceClient;
+    private final EmailService emailService;
 
     public AuthService(
             UserRepository userRepository,
@@ -42,13 +44,15 @@ public class AuthService {
             JwtService jwtService,
             RateLimiterService rateLimiterService,
             StringRedisTemplate redisTemplate,
-            AuditServiceClient auditServiceClient) {
+            AuditServiceClient auditServiceClient,
+            EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.rateLimiterService = rateLimiterService;
         this.redisTemplate = redisTemplate;
         this.auditServiceClient = auditServiceClient;
+        this.emailService = emailService;
     }
 
     /**
@@ -87,6 +91,9 @@ public class AuthService {
         );
 
         User saved = userRepository.save(user);
+
+        // Send email verification notification
+        emailService.sendVerificationEmail(saved.getEmail(), UUID.randomUUID().toString());
 
         auditServiceClient.logEvent(saved.getUsername(), "REGISTER", "—");
 
