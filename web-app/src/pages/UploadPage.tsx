@@ -87,6 +87,9 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
       if (!isSelf && recipientUsername.trim()) {
         setProgressStep(`Resolving public key for "${recipientUsername.trim()}"...`);
         const recipientReg = await authApi.getKeyByUsername(recipientUsername.trim());
+        if (!recipientReg || !recipientReg.rsaPublicKey || recipientReg.rsaPublicKey.trim() === '') {
+          throw new Error(`Recipient "${recipientUsername.trim()}" has not registered public keys yet. Please ensure they have created an account and visited their Key Vault.`);
+        }
         recipientRsaPublicKey = recipientReg.rsaPublicKey;
       }
 
