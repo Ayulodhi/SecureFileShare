@@ -116,8 +116,11 @@ export const authApi = {
   async getKeyByUsername(username: string): Promise<KeyRegistryResponse> {
     const res = await request<any>(`/api/v1/auth/keys/${encodeURIComponent(username)}`, {
       method: 'GET',
-    });
-    // Fallback unwrap supporting both direct object, {data: ...}, and nested responses
+      headers: {
+        // Explicitly omit Authorization header for public key lookup so expired tokens never block it
+        'Authorization': '',
+      },
+    } as any);
     const data = res?.data || res;
     return {
       id: data?.id || '',
