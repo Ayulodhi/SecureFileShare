@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -134,9 +135,31 @@ public class KeyRegistryService {
             String clean = identifier.toLowerCase().trim();
             user = userRepository.findByEmail(clean)
                     .or(() -> userRepository.findByUsername(identifier))
-                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found with identifier: " + identifier));
+                    .orElse(null);
         }
 
-        return getActiveKeys(user.getId());
+        if (user == null) {
+            // If user does not exist at all, throw 404
+            throw new ApiException(HttpStatus.NOT_FOUND, "User not found with identifier: " + identifier);
+        }
+
+        // Check if user has active keys; if not, return a graceful 404 with a clear message
+        Optional<KeyRegistry> keyRegistryOpt = keyRegistryRepository.findActiveByUserId(user.getId());
+        if (keyRegistryOpt.isEmpty()) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Recipient '" + identifier + "' has not generated or registered public keys in their Key Vault yet.");
+        }
+
+        KeyRegistry keyRegistry = keyRegistryOpt.get();
+
+        return new KeyRegistryResponse(
+                keyRegistry.getId(),
+                keyRegistry.getUser().getId(),
+                keyRegistry.getRsaPublicKey(),
+                keyRegistry.getEcPublicKey(),
+                keyRegistry.getRsaFingerprint(),
+                keyRegistry.getEcFingerprint(),
+                keyRegistry.getCreatedAt(),
+                keyRegistry.isRevoked()
+        );
     }
 }
