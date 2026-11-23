@@ -114,10 +114,9 @@ export const authApi = {
   },
 
   async getKeyByUsername(username: string): Promise<KeyRegistryResponse> {
-    const res = await request<KeyRegistryResponse | { data: KeyRegistryResponse }>(`/api/v1/auth/keys/${encodeURIComponent(username)}`, {
+    return await request<KeyRegistryResponse>(`/api/v1/auth/keys/${encodeURIComponent(username)}`, {
       method: 'GET',
     });
-    return (res as any).data || res;
   },
 
   logout(): void {
