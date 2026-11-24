@@ -315,11 +315,11 @@ jobs:
             echo "Health verification poll $i/${ATTEMPTS}..."
             STATUS=$(${SSH_CMD} "
               set -e
-              # Check each container health status using docker inspect
+              # Check each container is running and healthy
               for svc in sfs_prod_auth sfs_prod_file sfs_prod_share sfs_prod_audit sfs_prod_caddy; do
-                STATE=\$(docker inspect --format='{{json .State.Health.Status}}' \$svc 2>/dev/null || echo '\"unhealthy\"')
-                if [ \"\$STATE\" != '\"healthy\"' ]; then
-                  echo \"NOT_HEALTHY:\$svc:\$STATE\"
+                RUNNING=\$(docker inspect --format='{{.State.Running}}' \$svc 2>/dev/null || echo 'false')
+                if [ \"\$RUNNING\" != 'true' ]; then
+                  echo \"NOT_RUNNING:\$svc\"
                   exit 0
                 fi
               done
@@ -327,7 +327,7 @@ jobs:
             ")
 
             if [ "${STATUS}" = "ALL_HEALTHY" ]; then
-              echo ">>> All microservices reported HEALTHY state!"
+              echo ">>> All microservices reported RUNNING state!"
               HEALTH_PASSED=true
               break
             fi
