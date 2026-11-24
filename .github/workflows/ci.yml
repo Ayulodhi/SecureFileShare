@@ -75,6 +75,7 @@ jobs:
       - name: Start local test infrastructure (Postgres, MinIO, Redis)
         # Why: Integration tests (e.g. FileServiceIntegrationTest) require active PostgreSQL and MinIO instances
         run: |
+          cp .env.prod.example .env
           docker compose up -d
           # Wait for PostgreSQL to accept connections
           for i in $(seq 1 30); do
