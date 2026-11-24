@@ -239,8 +239,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      audit-service:
-        condition: service_healthy
     deploy:
       resources:
         limits:
@@ -251,8 +249,8 @@ services:
       test: ["CMD-SHELL", "curl -f http://localhost:8081/api/v1/health || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 90s
+      retries: 12
+      start_period: 120s
 
   # ----------------------------------------------------------------------------
   # Microservice: file-service
@@ -285,8 +283,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      audit-service:
-        condition: service_healthy
       minio:
         condition: service_healthy
     deploy:
@@ -299,8 +295,8 @@ services:
       test: ["CMD-SHELL", "curl -f http://localhost:8082/api/v1/health || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 90s
+      retries: 12
+      start_period: 120s
 
   # ----------------------------------------------------------------------------
   # Microservice: share-service
@@ -327,8 +323,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      audit-service:
-        condition: service_healthy
     deploy:
       resources:
         limits:
@@ -339,8 +333,8 @@ services:
       test: ["CMD-SHELL", "curl -f http://localhost:8083/api/v1/health || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 90s
+      retries: 12
+      start_period: 120s
 
   # ----------------------------------------------------------------------------
   # Microservice: audit-service
@@ -376,8 +370,8 @@ services:
       test: ["CMD-SHELL", "curl -f http://localhost:8084/api/v1/health || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 90s
+      retries: 12
+      start_period: 120s
 
 # ------------------------------------------------------------------------------
 # Network Isolation Architecture (Two-Tier DMZ)
