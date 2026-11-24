@@ -67,6 +67,11 @@ jobs:
           java-version: '21'
           # Built-in Maven dependency caching accelerates CI execution across workflow runs
           cache: 'maven'
+          cache-dependency-path: '**/pom.xml'
+
+      - name: Install Maven explicitly via apt
+        # Why: Bypasses maven-wrapper HTTP 429 rate limit errors when downloading wrapper distribution zip from apache.org
+        run: sudo apt-get update && sudo apt-get install -y maven
 
       - name: Grant execute permission to Maven wrapper
         # Why: Git permissions on Windows can strip executable bit from POSIX wrapper scripts
@@ -105,7 +110,7 @@ jobs:
         env:
           JAVA_TOOL_OPTIONS: "-Djava.awt.headless=true"
           DOCKER_API_VERSION: "1.44"
-        run: ./mvnw -B clean package -DskipTests --no-transfer-progress
+        run: mvn -B clean package -DskipTests --no-transfer-progress
 
       - name: Archive JUnit test reports
         # Why: "if: always()" ensures surefire failure reports are uploaded even if tests fail

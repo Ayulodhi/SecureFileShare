@@ -45,6 +45,10 @@ jobs:
           java-version: '21'
           cache: 'maven'
 
+      - name: Install Maven explicitly via apt
+        # Why: Bypasses maven-wrapper HTTP 429 rate limit errors when downloading wrapper distribution zip from apache.org
+        run: sudo apt-get update && sudo apt-get install -y maven
+
       - name: Make Maven wrapper executable
         run: chmod +x ./mvnw
 
@@ -80,7 +84,7 @@ jobs:
       - name: Execute clean package and skip tests
         env:
           JAVA_TOOL_OPTIONS: "-Djava.awt.headless=true"
-        run: ./mvnw -B clean package -DskipTests --no-transfer-progress
+        run: mvn -B clean package -DskipTests --no-transfer-progress
 
   # ----------------------------------------------------------------------------
   # Job 2: Build & Push Multi-Stage ARM64 Images
