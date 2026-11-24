@@ -59,8 +59,12 @@ public class FriendsService {
                 .or(() -> userRepository.findByFriendCode(emailOrFriendCode));
 
         if (addresseeOpt.isEmpty()) {
-            emailService.sendFriendInviteEmail(emailOrFriendCode, requester.getUsername());
-            log.info("Sent friend invite email to unregistered recipient {}", emailOrFriendCode);
+            try {
+                emailService.sendFriendInviteEmail(emailOrFriendCode, requester.getUsername());
+                log.info("Sent friend invite email to unregistered recipient {}", emailOrFriendCode);
+            } catch (Exception e) {
+                log.warn("Failed to dispatch friend invite email to {}: {}", emailOrFriendCode, e.getMessage());
+            }
             return;
         }
 
@@ -111,7 +115,11 @@ public class FriendsService {
         }
 
         // Send friend request email notification
-        emailService.sendFriendRequestEmail(addressee.getEmail(), requester.getUsername());
+        try {
+            emailService.sendFriendRequestEmail(addressee.getEmail(), requester.getUsername());
+        } catch (Exception e) {
+            log.warn("Failed to dispatch friend request email to {}: {}", addressee.getEmail(), e.getMessage());
+        }
 
         log.info("Friend request sent from {} to {}", requesterId, addressee.getId());
     }
