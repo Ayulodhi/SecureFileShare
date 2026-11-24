@@ -135,16 +135,16 @@ public class EmailService {
      * Sends friend invitation email to non-registered recipient asynchronously.
      */
     @Async
-    public CompletableFuture<Void> sendFriendInviteEmail(String toEmail, String senderUsername) {
+    public CompletableFuture<Void> sendFriendInviteEmail(String toEmail, String senderUsername, String inviteUrl) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
             message.setTo(toEmail);
             message.setSubject("Secure File Share - Friend Invitation");
             message.setText("Hello,\n\n" + senderUsername + " has invited you to connect on Secure File Share.\n\n" +
-                    "Please sign up at " + appBaseUrl + "/register to create your account and connect with them.");
+                    "Click the secure link below to create your account and connect with them:\n" + inviteUrl);
             mailSender.send(message);
-            log.info("Friend invite email sent successfully to unregistered recipient {}", toEmail);
+            log.info("Friend invite email with link sent successfully to unregistered recipient {}", toEmail);
             return CompletableFuture.completedFuture(null);
         } catch (Exception e) {
             log.error("Failed to send friend invite email to {}: {}", toEmail, e.getMessage());
@@ -152,5 +152,10 @@ public class EmailService {
             future.completeExceptionally(e);
             return future;
         }
+    }
+
+    @Async
+    public CompletableFuture<Void> sendFriendInviteEmail(String toEmail, String senderUsername) {
+        return sendFriendInviteEmail(toEmail, senderUsername, appBaseUrl + "/register");
     }
 }

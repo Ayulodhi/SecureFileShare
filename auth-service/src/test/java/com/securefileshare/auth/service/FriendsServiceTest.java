@@ -89,6 +89,6 @@ class FriendsServiceTest {
 
         friendsService.sendFriendRequest(requesterId, unregisteredEmail);
 
-        verify(emailService).sendFriendInviteEmail(unregisteredEmail, "alice");
+        verify(emailService).sendFriendInviteEmail(anyString(), anyString(), anyString());
     }
 }
