@@ -78,10 +78,12 @@ export async function request<T>(
     headers.set('Content-Type', 'application/json');
   }
 
-  // Attach Bearer token if available
+  // Attach Bearer token if available and header not explicitly cleared
   const token = getAuthToken();
-  if (token) {
+  if (token && headers.get('Authorization') !== '') {
     headers.set('Authorization', `Bearer ${token}`);
+  } else if (headers.get('Authorization') === '') {
+    headers.delete('Authorization');
   }
 
   const isProduction = (typeof import.meta !== 'undefined' && (import.meta as any).env?.PROD) ||

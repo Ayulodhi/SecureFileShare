@@ -1,7 +1,7 @@
 import { useState, useRef, DragEvent, ChangeEvent } from 'react';
 import { useAuth } from '../state/AuthContext';
 import { getUserKeys } from '../crypto/keyVault';
-import { encryptFilePayload } from '../crypto/webCryptoService';
+import { encryptFilePayload, arrayBufferToBase64 } from '../crypto/webCryptoService';
 import { authApi } from '../api/authApi';
 import { fileApi } from '../api/fileApi';
 import { shareApi } from '../api/shareApi';
@@ -18,6 +18,9 @@ import {
   Lock,
   Sparkles,
   FileCheck,
+  Download,
+  Copy,
+  Check,
 } from 'lucide-react';
 
 interface UploadPageProps {
@@ -33,6 +36,13 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
   const [encrypting, setEncrypting] = useState(false);
   const [progressStep, setProgressStep] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [localEncryptedResult, setLocalEncryptedResult] = useState<{
+    ciphertextBase64: string;
+    ivBase64: string;
+    wrappedKeyBase64: string;
+    sha256Hash: string;
+  } | null>(null);
+  const [copied, setCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
@@ -51,6 +61,7 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       setSelectedFile(e.dataTransfer.files[0]);
       setError(null);
+      setLocalEncryptedResult(null);
     }
   };
 
@@ -58,6 +69,7 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
     if (e.target.files && e.target.files.length > 0) {
       setSelectedFile(e.target.files[0]);
       setError(null);
+      setLocalEncryptedResult(null);
     }
   };
 
@@ -87,6 +99,9 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
       if (!isSelf && recipientUsername.trim()) {
         setProgressStep(`Resolving public key for "${recipientUsername.trim()}"...`);
         const recipientReg = await authApi.getKeyByUsername(recipientUsername.trim());
+        if (!recipientReg || !recipientReg.rsaPublicKey || recipientReg.rsaPublicKey.trim() === '') {
+          throw new Error(`Recipient "${recipientUsername.trim()}" has not registered public keys yet. Please ensure they have created an account and visited their Key Vault.`);
+        }
         recipientRsaPublicKey = recipientReg.rsaPublicKey;
       }
 
@@ -96,6 +111,15 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
         recipientRsaPublicKey,
         userKeys.ecPrivateKey
       );
+
+      // Generate local encrypted package for dedicated decrypt workspace download
+      const ciphertextBase64 = arrayBufferToBase64(await encryptedPackage.ciphertextBlob.arrayBuffer());
+      setLocalEncryptedResult({
+        ciphertextBase64,
+        ivBase64: encryptedPackage.ivBase64,
+        wrappedKeyBase64: encryptedPackage.ownerWrappedKeyBase64,
+        sha256Hash: encryptedPackage.ciphertextHashHex,
+      });
 
       setProgressStep('Uploading encrypted ciphertext blob...');
       const uploadedFile = await fileApi.uploadEncryptedFile(
@@ -122,8 +146,6 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
       }
 
       showToast(`"${selectedFile.name}" encrypted and uploaded successfully.`, 'success');
-      setSelectedFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
       onUploadSuccess();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Upload failed.';
@@ -132,6 +154,28 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
       setEncrypting(false);
       setProgressStep(null);
     }
+  };
+
+  const handleDownloadCiphertext = () => {
+    if (!localEncryptedResult || !selectedFile) return;
+    const jsonStr = JSON.stringify(localEncryptedResult, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${selectedFile.name}.encrypted-package.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Encrypted package downloaded successfully for local decrypt workspace.', 'success');
+  };
+
+  const handleCopyCiphertext = () => {
+    if (!localEncryptedResult) return;
+    navigator.clipboard.writeText(JSON.stringify(localEncryptedResult, null, 2));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -206,7 +250,7 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
             </div>
           )}
 
-          {/* GetShared-Inspired Interactive Drop Zone */}
+          {/* Drop Zone */}
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -228,11 +272,7 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
                 ? 'rgba(16, 185, 129, 0.04)'
                 : 'rgba(255, 255, 255, 0.02)',
               transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-              boxShadow: isDragging
-                ? '0 0 35px rgba(99, 102, 241, 0.3)'
-                : 'none',
               position: 'relative',
-              overflow: 'hidden',
             }}
           >
             <input
@@ -248,7 +288,7 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '1rem',
+                  gap: '0.85rem',
                 }}
               >
                 <div
@@ -261,7 +301,6 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: '0 4px 20px rgba(16, 185, 129, 0.2)',
                   }}
                 >
                   <FileCheck size={28} color="var(--status-clean)" />
@@ -273,7 +312,6 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
                       fontWeight: 600,
                       color: 'var(--text-primary)',
                       marginBottom: '0.25rem',
-                      wordBreak: 'break-all',
                     }}
                   >
                     {selectedFile.name}
@@ -288,28 +326,9 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
                       fontFamily: 'var(--font-mono)',
                     }}
                   >
-                    <span
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.06)',
-                        padding: '0.2rem 0.6rem',
-                        borderRadius: 'var(--radius-pill)',
-                        color: 'var(--text-secondary)',
-                      }}
-                    >
-                      {formatFileSize(selectedFile.size)}
-                    </span>
+                    <span>{formatFileSize(selectedFile.size)}</span>
                     <span>Ready for local encryption</span>
                   </div>
-                </div>
-                <div
-                  style={{
-                    fontSize: '0.75rem',
-                    color: 'var(--accent-primary)',
-                    fontWeight: 500,
-                    marginTop: '0.25rem',
-                  }}
-                >
-                  Click or drop another file to replace
                 </div>
               </div>
             ) : (
@@ -331,8 +350,6 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginBottom: '1.25rem',
-                    boxShadow: '0 8px 24px rgba(99, 102, 241, 0.25)',
-                    animation: 'floatSoft 3s ease-in-out infinite',
                   }}
                 >
                   <UploadCloud size={30} color="#818cf8" />
@@ -361,7 +378,7 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
             )}
           </div>
 
-          {/* Segmented Option Selector: Key Wrapping Target */}
+          {/* Key Wrapping Target Selector */}
           <div
             style={{
               borderTop: '1px solid var(--hairline)',
@@ -390,24 +407,17 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
                 gap: '0.85rem',
               }}
             >
-              {/* Option 1: Myself */}
               <div
                 onClick={() => setIsSelf(true)}
                 style={{
                   padding: '1rem 1.15rem',
                   borderRadius: 'var(--radius-md)',
-                  border: isSelf
-                    ? '1px solid var(--accent-primary)'
-                    : '1px solid var(--hairline)',
-                  background: isSelf
-                    ? 'rgba(99, 102, 241, 0.1)'
-                    : 'rgba(255, 255, 255, 0.02)',
+                  border: isSelf ? '1px solid var(--accent-primary)' : '1px solid var(--hairline)',
+                  background: isSelf ? 'rgba(99, 102, 241, 0.1)' : 'rgba(255, 255, 255, 0.02)',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.85rem',
-                  transition: 'all 0.2s ease',
-                  boxShadow: isSelf ? '0 0 15px rgba(99, 102, 241, 0.2)' : 'none',
                 }}
               >
                 <div
@@ -415,12 +425,9 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
                     width: '18px',
                     height: '18px',
                     borderRadius: '50%',
-                    border: isSelf
-                      ? '5px solid var(--accent-primary)'
-                      : '2px solid var(--text-muted)',
+                    border: isSelf ? '5px solid var(--accent-primary)' : '2px solid var(--text-muted)',
                     background: '#ffffff',
                     flexShrink: 0,
-                    transition: 'all 0.2s ease',
                   }}
                 />
                 <div>
@@ -428,29 +435,22 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
                     Encrypt for Myself
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                    Wraps key with your RSA public key ({user?.username})
+                    Wraps key with your RSA public key
                   </div>
                 </div>
               </div>
 
-              {/* Option 2: Recipient User */}
               <div
                 onClick={() => setIsSelf(false)}
                 style={{
                   padding: '1rem 1.15rem',
                   borderRadius: 'var(--radius-md)',
-                  border: !isSelf
-                    ? '1px solid var(--accent-primary)'
-                    : '1px solid var(--hairline)',
-                  background: !isSelf
-                    ? 'rgba(99, 102, 241, 0.1)'
-                    : 'rgba(255, 255, 255, 0.02)',
+                  border: !isSelf ? '1px solid var(--accent-primary)' : '1px solid var(--hairline)',
+                  background: !isSelf ? 'rgba(99, 102, 241, 0.1)' : 'rgba(255, 255, 255, 0.02)',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.85rem',
-                  transition: 'all 0.2s ease',
-                  boxShadow: !isSelf ? '0 0 15px rgba(99, 102, 241, 0.2)' : 'none',
                 }}
               >
                 <div
@@ -458,12 +458,9 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
                     width: '18px',
                     height: '18px',
                     borderRadius: '50%',
-                    border: !isSelf
-                      ? '5px solid var(--accent-primary)'
-                      : '2px solid var(--text-muted)',
+                    border: !isSelf ? '5px solid var(--accent-primary)' : '2px solid var(--text-muted)',
                     background: '#ffffff',
                     flexShrink: 0,
-                    transition: 'all 0.2s ease',
                   }}
                 />
                 <div>
@@ -514,62 +511,77 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
             )}
           </div>
 
-          {/* Cryptographic Execution Status */}
           {progressStep && (
             <div
               style={{
-                background: 'rgba(99, 102, 241, 0.12)',
-                border: '1px solid rgba(99, 102, 241, 0.35)',
-                color: 'var(--text-primary)',
-                padding: '0.9rem 1.15rem',
+                background: 'rgba(99, 102, 241, 0.08)',
+                border: '1px solid rgba(99, 102, 241, 0.25)',
+                color: '#818cf8',
+                padding: '0.85rem 1.15rem',
                 borderRadius: 'var(--radius-md)',
                 fontSize: '0.875rem',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.75rem',
-                boxShadow: '0 0 20px rgba(99, 102, 241, 0.15)',
               }}
             >
-              <Cpu size={18} color="#818cf8" style={{ animation: 'pulseGlow 1.5s infinite' }} />
-              <span className="font-mono" style={{ fontSize: '0.8125rem' }}>
-                {progressStep}
-              </span>
+              <Cpu size={18} className="animate-spin" style={{ flexShrink: 0 }} />
+              <span>{progressStep}</span>
             </div>
           )}
 
-          {/* Footer Actions */}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-              alignItems: 'center',
-              gap: '1rem',
-              paddingTop: '0.5rem',
-            }}
-          >
-            {selectedFile && (
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setSelectedFile(null);
-                  if (fileInputRef.current) fileInputRef.current.value = '';
-                }}
-                disabled={encrypting}
-              >
-                Clear
-              </Button>
-            )}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
             <Button
               variant="primary"
               onClick={handleUpload}
-              disabled={!selectedFile || encrypting}
               loading={encrypting}
               icon={<Shield size={16} />}
-              style={{ minWidth: '180px' }}
+              style={{ padding: '0.75rem 1.75rem' }}
             >
-              Encrypt & Upload
+              {encrypting ? 'Encrypting & Uploading...' : 'Encrypt & Upload Securely'}
             </Button>
           </div>
+
+          {/* Dedicated Local Encrypted Package Workspace Download (Fulfilling user request for offline/local decrypt workspace) */}
+          {localEncryptedResult && (
+            <div
+              style={{
+                marginTop: '1rem',
+                padding: '1.25rem',
+                background: 'rgba(16, 185, 129, 0.06)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                borderRadius: 'var(--radius-md)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#34d399', fontWeight: 600, fontSize: '0.9rem' }}>
+                <Check size={16} /> Ciphertext Package Ready for Dedicated Decryption Workspace
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                You can download the raw JSON encrypted package below to store in your local encrypted file space or test offline decryption.
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem' }}>
+                <Button
+                  variant="secondary"
+                  onClick={handleDownloadCiphertext}
+                  icon={<Download size={14} />}
+                  style={{ fontSize: '0.8rem', padding: '0.45rem 0.85rem' }}
+                >
+                  Download .encrypted-package.json
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={handleCopyCiphertext}
+                  icon={copied ? <Check size={14} /> : <Copy size={14} />}
+                  style={{ fontSize: '0.8rem', padding: '0.45rem 0.85rem' }}
+                >
+                  {copied ? 'Copied Package JSON' : 'Copy Package JSON'}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </Card>
     </div>

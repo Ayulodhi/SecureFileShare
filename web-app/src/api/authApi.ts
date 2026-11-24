@@ -114,9 +114,23 @@ export const authApi = {
   },
 
   async getKeyByUsername(username: string): Promise<KeyRegistryResponse> {
-    return await request<KeyRegistryResponse>(`/api/v1/auth/keys/${encodeURIComponent(username)}`, {
+    const res = await request<any>(`/api/v1/auth/keys/${encodeURIComponent(username)}`, {
       method: 'GET',
-    });
+      headers: {
+        // Explicitly omit Authorization header for public key lookup so expired tokens never block it
+        'Authorization': '',
+      },
+    } as any);
+    const data = res?.data || res;
+    return {
+      id: data?.id || '',
+      userId: data?.userId || '',
+      username: data?.username || username,
+      rsaPublicKey: data?.rsaPublicKey || data?.rsa_public_key || '',
+      ecPublicKey: data?.ecPublicKey || data?.ec_public_key || '',
+      keyFingerprint: data?.keyFingerprint || data?.key_fingerprint || '',
+      registeredAt: data?.registeredAt || new Date().toISOString(),
+    };
   },
 
   logout(): void {
