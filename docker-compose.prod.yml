@@ -285,6 +285,12 @@ services:
           memory: 512M
         reservations:
           memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8082/api/v1/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 120s
 
   # ----------------------------------------------------------------------------
   # Microservice: share-service
