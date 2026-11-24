@@ -27,6 +27,7 @@ import {
   Plus,
   Sparkles,
   ShieldCheck,
+  Trash2,
 } from 'lucide-react';
 
 interface FilesPageProps {
@@ -109,6 +110,17 @@ export function FilesPage({ onNavigateToUpload }: FilesPageProps) {
       showToast(message, 'error');
     } finally {
       setDecryptingFileId(null);
+    }
+  };
+
+  const handleDelete = async (file: FileMetadataResponse) => {
+    if (!confirm(`Are you sure you want to delete "${file.originalName}"?`)) return;
+    try {
+      await fileApi.deleteFile(file.id);
+      showToast(`Deleted "${file.originalName}" successfully.`, 'success');
+      loadFiles();
+    } catch {
+      showToast('Failed to delete file.', 'error');
     }
   };
 
@@ -228,6 +240,14 @@ export function FilesPage({ onNavigateToUpload }: FilesPageProps) {
             style={{ padding: '0.45rem 0.85rem', fontSize: '0.785rem' }}
           >
             Share
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => handleDelete(f)}
+            icon={<Trash2 size={13} color="#f87171" />}
+            style={{ padding: '0.45rem 0.65rem', fontSize: '0.785rem', borderColor: 'rgba(248, 113, 113, 0.3)' }}
+          >
+            Delete
           </Button>
         </div>
       ),
