@@ -251,8 +251,8 @@ services:
       test: ["CMD-SHELL", "curl -f http://localhost:8081/api/v1/health || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 60s
+      retries: 10
+      start_period: 90s
 
   # ----------------------------------------------------------------------------
   # Microservice: file-service
@@ -299,8 +299,8 @@ services:
       test: ["CMD-SHELL", "curl -f http://localhost:8082/api/v1/health || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 60s
+      retries: 10
+      start_period: 90s
 
   # ----------------------------------------------------------------------------
   # Microservice: share-service
@@ -339,8 +339,8 @@ services:
       test: ["CMD-SHELL", "curl -f http://localhost:8083/api/v1/health || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 60s
+      retries: 10
+      start_period: 90s
 
   # ----------------------------------------------------------------------------
   # Microservice: audit-service
@@ -376,8 +376,8 @@ services:
       test: ["CMD-SHELL", "curl -f http://localhost:8084/api/v1/health || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 60s
+      retries: 10
+      start_period: 90s
 
 # ------------------------------------------------------------------------------
 # Network Isolation Architecture (Two-Tier DMZ)
