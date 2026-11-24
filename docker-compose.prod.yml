@@ -283,8 +283,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      minio:
-        condition: service_healthy
     deploy:
       resources:
         limits:
