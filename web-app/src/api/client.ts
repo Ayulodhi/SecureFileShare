@@ -120,6 +120,11 @@ export async function request<T>(
   const json = await response.json();
 
   if (!response.ok) {
+    if (response.status === 401) {
+      setAuthToken(null);
+      setCurrentUser(null);
+      throw new ApiException(401, 'Unauthorized', 'Your session has expired. Please log in again.');
+    }
     const errorMsg = json.message || json.error || 'Request failed';
     throw new ApiException(response.status, json.error || 'Error', errorMsg, json.path);
   }

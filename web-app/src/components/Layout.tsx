@@ -57,6 +57,7 @@ export function Layout({ currentTab, onSelectTab, children }: LayoutProps) {
         <div style={{ marginBottom: '2.25rem', padding: '0 0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem' }}>
             <div
+              className="animate-float-3d"
               style={{
                 width: '36px',
                 height: '36px',
@@ -65,7 +66,7 @@ export function Layout({ currentTab, onSelectTab, children }: LayoutProps) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 4px 14px rgba(99, 102, 241, 0.4), 0 0 20px rgba(6, 182, 212, 0.25)',
+                boxShadow: '0 0 20px rgba(0, 240, 255, 0.5)',
               }}
             >
               <Shield size={20} color="#ffffff" strokeWidth={2.2} />
