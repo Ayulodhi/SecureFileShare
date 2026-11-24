@@ -16,7 +16,6 @@ import {
   User,
   Cpu,
   Lock,
-  Sparkles,
   FileCheck,
   Download,
   Copy,
@@ -191,10 +190,6 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
         }}
       >
         <div>
-          <div className="subheading-kicker" style={{ marginBottom: '0.4rem' }}>
-            <Sparkles size={13} />
-            Client-Side Cryptography Pipeline
-          </div>
           <h1
             style={{
               fontSize: '1.75rem',
@@ -222,6 +217,47 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
         >
           <Lock size={12} />
           <span>Zero-Knowledge AES-256-GCM</span>
+        </div>
+      </div>
+
+      {/* 3D Holographic Cyber Banner */}
+      <div
+        className="animate-float-3d"
+        style={{
+          background: 'linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(255, 0, 110, 0.08))',
+          border: '1px solid var(--accent-cyan)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '1.25rem 1.75rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1.25rem',
+          boxShadow: '0 0 30px rgba(0, 240, 255, 0.2)',
+        }}
+      >
+        <div
+          className="animate-pulse-glow"
+          style={{
+            width: '44px',
+            height: '44px',
+            background: 'var(--accent-cyan)',
+            color: '#05020D',
+            borderRadius: 'var(--radius-md)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            fontWeight: 700,
+          }}
+        >
+          <Lock size={22} />
+        </div>
+        <div>
+          <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--accent-cyan)', marginBottom: '0.2rem' }}>
+            Holographic Zero-Knowledge Ingress Active
+          </h3>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+            Files are encrypted locally on your device via AES-256-GCM before transmission. The server never sees plaintext.
+          </p>
         </div>
       </div>
 
@@ -292,15 +328,17 @@ export function UploadPage({ onUploadSuccess }: UploadPageProps) {
                 }}
               >
                 <div
+                  className="animate-float-3d"
                   style={{
                     width: '56px',
                     height: '56px',
                     borderRadius: 'var(--radius-lg)',
-                    background: 'rgba(16, 185, 129, 0.15)',
-                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    background: 'rgba(0, 240, 255, 0.15)',
+                    border: '1px solid var(--accent-cyan)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
+                    boxShadow: '0 0 20px rgba(0, 240, 255, 0.3)',
                   }}
                 >
                   <FileCheck size={28} color="var(--status-clean)" />
