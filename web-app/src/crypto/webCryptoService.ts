@@ -47,6 +47,9 @@ export function spkiToPem(spkiBuffer: ArrayBuffer): string {
 }
 
 export function pemToSpkiBuffer(pem: string): ArrayBuffer {
+  if (!pem || typeof pem !== 'string') {
+    throw new Error('Invalid or missing RSA public key PEM');
+  }
   const cleanBase64 = pem
     .replace(/-----BEGIN [A-Z ]+-----/g, '')
     .replace(/-----END [A-Z ]+-----/g, '')
@@ -204,6 +207,19 @@ export async function decryptFilePayload(
   wrappedDekBase64: string,
   rsaPrivateKey: CryptoKey
 ): Promise<ArrayBuffer> {
+  if (!ciphertextBuffer || ciphertextBuffer.byteLength === 0) {
+    throw new Error('Ciphertext buffer cannot be empty');
+  }
+  if (!ivBase64 || typeof ivBase64 !== 'string') {
+    throw new Error('Invalid or missing initialization vector (IV)');
+  }
+  if (!wrappedDekBase64 || typeof wrappedDekBase64 !== 'string') {
+    throw new Error('Invalid or missing wrapped data encryption key (DEK)');
+  }
+  if (!rsaPrivateKey) {
+    throw new Error('RSA private key is required for decryption');
+  }
+
   // Step 1: Decode parameters
   const ivBuffer = base64ToArrayBuffer(ivBase64);
   const wrappedDekBuffer = base64ToArrayBuffer(wrappedDekBase64);

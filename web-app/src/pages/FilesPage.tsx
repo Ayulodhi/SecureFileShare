@@ -8,6 +8,8 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Table, Column } from '../components/Table';
 import { ShareModal } from '../components/ShareModal';
+import { CiphertextInspectorModal } from '../components/CiphertextInspectorModal';
+import { EncryptedFilePackage } from '../api/fileApi';
 import {
   formatFileSize,
   formatHash,
@@ -24,6 +26,8 @@ import {
   FileText,
   Plus,
   Sparkles,
+  ShieldCheck,
+  Trash2,
 } from 'lucide-react';
 
 interface FilesPageProps {
@@ -36,6 +40,22 @@ export function FilesPage({ onNavigateToUpload }: FilesPageProps) {
   const [loading, setLoading] = useState(false);
   const [decryptingFileId, setDecryptingFileId] = useState<string | null>(null);
   const [shareTarget, setShareTarget] = useState<FileMetadataResponse | null>(null);
+  const [inspectTarget, setInspectTarget] = useState<FileMetadataResponse | null>(null);
+  const [inspectPkg, setInspectPkg] = useState<EncryptedFilePackage | null>(null);
+  const [inspecting, setInspecting] = useState(false);
+
+  const handleInspect = async (file: FileMetadataResponse) => {
+    setInspecting(true);
+    try {
+      const pkg = await fileApi.downloadFilePackage(file.id);
+      setInspectPkg(pkg);
+      setInspectTarget(file);
+    } catch (err: unknown) {
+      showToast('Failed to load ciphertext package for inspection.', 'error');
+    } finally {
+      setInspecting(false);
+    }
+  };
 
   const loadFiles = async () => {
     setLoading(true);
@@ -90,6 +110,17 @@ export function FilesPage({ onNavigateToUpload }: FilesPageProps) {
       showToast(message, 'error');
     } finally {
       setDecryptingFileId(null);
+    }
+  };
+
+  const handleDelete = async (file: FileMetadataResponse) => {
+    if (!confirm(`Are you sure you want to delete "${file.originalName}"?`)) return;
+    try {
+      await fileApi.deleteFile(file.id);
+      showToast(`Deleted "${file.originalName}" successfully.`, 'success');
+      loadFiles();
+    } catch {
+      showToast('Failed to delete file.', 'error');
     }
   };
 
@@ -186,6 +217,15 @@ export function FilesPage({ onNavigateToUpload }: FilesPageProps) {
         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
           <Button
             variant="secondary"
+            onClick={() => handleInspect(f)}
+            loading={inspecting && inspectTarget?.id === f.id}
+            icon={<ShieldCheck size={13} />}
+            style={{ padding: '0.45rem 0.85rem', fontSize: '0.785rem' }}
+          >
+            Inspect
+          </Button>
+          <Button
+            variant="secondary"
             onClick={() => handleDownloadAndDecrypt(f)}
             loading={decryptingFileId === f.id}
             icon={<Download size={13} />}
@@ -200,6 +240,14 @@ export function FilesPage({ onNavigateToUpload }: FilesPageProps) {
             style={{ padding: '0.45rem 0.85rem', fontSize: '0.785rem' }}
           >
             Share
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => handleDelete(f)}
+            icon={<Trash2 size={13} color="#f87171" />}
+            style={{ padding: '0.45rem 0.65rem', fontSize: '0.785rem', borderColor: 'rgba(248, 113, 113, 0.3)' }}
+          >
+            Delete
           </Button>
         </div>
       ),
@@ -274,6 +322,18 @@ export function FilesPage({ onNavigateToUpload }: FilesPageProps) {
         <ShareModal
           file={shareTarget}
           onClose={() => setShareTarget(null)}
+        />
+      )}
+
+      {/* Ciphertext Inspector Modal */}
+      {inspectTarget && (
+        <CiphertextInspectorModal
+          file={inspectTarget}
+          pkg={inspectPkg}
+          onClose={() => {
+            setInspectTarget(null);
+            setInspectPkg(null);
+          }}
         />
       )}
     </div>

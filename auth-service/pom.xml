@@ -25,6 +25,12 @@
     <description>Authentication, User Management, and Public Key Registry Service</description>
 
     <dependencies>
+        <!-- Spring Boot Mail for SMTP integration -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!-- Shared common module -->
         <dependency>
             <groupId>com.securefileshare</groupId>

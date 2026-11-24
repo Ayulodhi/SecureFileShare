@@ -56,3 +56,7 @@ security:
   jwt:
     secret: ${JWT_SECRET:super_secret_test_jwt_key_audit_service_2026_at_least_32_chars!}
 
+# Internal Service Credential for Audit Ingestion
+audit:
+  service-key: ${AUDIT_SERVICE_KEY:sfs_service_audit_secret_2026}
+

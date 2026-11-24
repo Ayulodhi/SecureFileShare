@@ -90,9 +90,9 @@ public class AuthController {
      * @param userId Target user UUID
      * @return ApiResponse containing KeyRegistryResponse
      */
-    @GetMapping("/keys/{userId}")
-    public ResponseEntity<ApiResponse<KeyRegistryResponse>> getKeys(@PathVariable UUID userId) {
-        KeyRegistryResponse response = keyRegistryService.getActiveKeys(userId);
+    @GetMapping("/keys/{identifier}")
+    public ResponseEntity<ApiResponse<KeyRegistryResponse>> getKeys(@PathVariable String identifier) {
+        KeyRegistryResponse response = keyRegistryService.getActiveKeysByIdentifier(identifier);
         return ResponseEntity.ok(ApiResponse.success("Public keys retrieved successfully", response));
     }
 
@@ -112,6 +112,15 @@ public class AuthController {
             authService.logout(token);
         }
         return ResponseEntity.ok(ApiResponse.success("Logged out successfully"));
+    }
+
+    /**
+     * Notifies a recipient about a shared document via email (notifies if registered, invites if unregistered).
+     */
+    @PostMapping("/notify-share")
+    public ResponseEntity<ApiResponse<Void>> notifyShare(@Valid @RequestBody NotifyShareRequest request) {
+        authService.sendShareNotification(request.getRecipientIdentifier(), request.getSenderUsername(), request.getFileName());
+        return ResponseEntity.ok(ApiResponse.success("Share notification email processed successfully"));
     }
 
     /**

@@ -142,6 +142,27 @@ services:
       start_period: 10s
 
   # ----------------------------------------------------------------------------
+  # Mailpit Local SMTP Server & Web Mailbox
+  # WHAT: Captures all outgoing emails locally and provides a live web UI for viewing them.
+  # WHY: 100% reliable local mail delivery for demos without relying on external SMTP rate limits.
+  # ----------------------------------------------------------------------------
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: sfs_prod_mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025" # Web UI UI inbox
+    networks:
+      - sfs_prod_internal
+      - sfs_prod_public
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 32M
+
+  # ----------------------------------------------------------------------------
   # MinIO S3-Compatible Object Storage
   # WHAT: Encrypted file storage engine.
   # WHY: Blind storage for client-side encrypted AES-256-GCM ciphertexts.
@@ -203,6 +224,10 @@ services:
       ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-AdminSecurePass2026!}
       SERVICES_AUDIT_URL: http://audit-service:8084/api/v1
       AUDIT_SERVICE_KEY: ${AUDIT_SERVICE_KEY}
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      MAIL_USERNAME: ""
+      MAIL_PASSWORD: ""
       # JVM flags: bounds max heap to 384MB within the 512MB cgroup limit
       # Why: Leaves 128MB headroom for Metaspace, thread stacks, and native memory
       JAVA_OPTS: "-XX:+UseContainerSupport -Xms128m -Xmx384m -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
@@ -294,6 +319,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       SERVICES_AUDIT_URL: http://audit-service:8084/api/v1
       AUDIT_SERVICE_KEY: ${AUDIT_SERVICE_KEY}
+      SERVICES_AUTH_URL: http://auth-service:8081
       JAVA_OPTS: "-XX:+UseContainerSupport -Xms128m -Xmx384m -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
     networks:
       - sfs_prod_internal

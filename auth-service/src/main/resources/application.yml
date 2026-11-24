@@ -49,6 +49,19 @@ spring:
       password: ${REDIS_PASSWORD}
       timeout: 2000ms
 
+  # Mail configuration pointing to Gmail SMTP server
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:ayulodhi07@gmail.com}
+    password: ${MAIL_PASSWORD:ycfq pbya kmxa psre}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 # Cryptographic and JWT Configuration
 security:
   jwt:

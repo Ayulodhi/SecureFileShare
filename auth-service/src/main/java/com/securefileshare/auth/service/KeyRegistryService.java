@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -104,6 +105,51 @@ public class KeyRegistryService {
         // Why: Senders must always wrap files using the recipient's latest active key
         KeyRegistry keyRegistry = keyRegistryRepository.findActiveByUserId(userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "No active public keys registered for user ID: " + userId));
+
+        return new KeyRegistryResponse(
+                keyRegistry.getId(),
+                keyRegistry.getUser().getId(),
+                keyRegistry.getRsaPublicKey(),
+                keyRegistry.getEcPublicKey(),
+                keyRegistry.getRsaFingerprint(),
+                keyRegistry.getEcFingerprint(),
+                keyRegistry.getCreatedAt(),
+                keyRegistry.isRevoked()
+        );
+    }
+
+    /**
+     * Retrieves active public keys for a user identified by UUID, username, or email.
+     */
+    @Transactional(readOnly = true)
+    public KeyRegistryResponse getActiveKeysByIdentifier(String identifier) {
+        User user = null;
+        try {
+            UUID userId = UUID.fromString(identifier);
+            user = userRepository.findById(userId).orElse(null);
+        } catch (IllegalArgumentException ignored) {
+            // Not a UUID
+        }
+
+        if (user == null) {
+            String clean = identifier.toLowerCase().trim();
+            user = userRepository.findByEmail(clean)
+                    .or(() -> userRepository.findByUsername(identifier))
+                    .orElse(null);
+        }
+
+        if (user == null) {
+            // If user does not exist at all, throw 404
+            throw new ApiException(HttpStatus.NOT_FOUND, "User not found with identifier: " + identifier);
+        }
+
+        // Check if user has active keys; if not, return a graceful 404 with a clear message
+        Optional<KeyRegistry> keyRegistryOpt = keyRegistryRepository.findActiveByUserId(user.getId());
+        if (keyRegistryOpt.isEmpty()) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Recipient '" + identifier + "' has not generated or registered public keys in their Key Vault yet.");
+        }
+
+        KeyRegistry keyRegistry = keyRegistryOpt.get();
 
         return new KeyRegistryResponse(
                 keyRegistry.getId(),

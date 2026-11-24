@@ -9,9 +9,10 @@ import {
   LogOut,
   User,
   Users,
+  Unlock,
 } from 'lucide-react';
 
-export type NavTab = 'files' | 'upload' | 'shares' | 'friends' | 'audit' | 'keys';
+export type NavTab = 'files' | 'upload' | 'shares' | 'friends' | 'audit' | 'keys' | 'decrypt';
 
 interface LayoutProps {
   currentTab: NavTab;
@@ -27,8 +28,9 @@ export function Layout({ currentTab, onSelectTab, children }: LayoutProps) {
     { id: 'upload', label: 'Upload & Encrypt', icon: UploadCloud, number: '02' },
     { id: 'shares', label: 'Share Links', icon: Share2, number: '03' },
     { id: 'friends', label: 'Friends & Invites', icon: Users, number: '04' },
-    { id: 'audit', label: 'Audit Trail', icon: Shield, number: '05' },
-    { id: 'keys', label: 'Key Vault', icon: Key, number: '06' },
+    { id: 'decrypt', label: 'Decrypt Workbench', icon: Unlock, number: '05' },
+    { id: 'audit', label: 'Audit Trail', icon: Shield, number: '06' },
+    { id: 'keys', label: 'Key Vault', icon: Key, number: '07' },
   ] as const;
 
   return (

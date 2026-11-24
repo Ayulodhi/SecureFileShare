@@ -2,6 +2,7 @@ package com.securefileshare.share.service;
 
 import com.securefileshare.common.exception.ApiException;
 import com.securefileshare.share.client.AuditServiceClient;
+import com.securefileshare.share.client.AuthServiceClient;
 import com.securefileshare.share.dto.CreateShareRequest;
 import com.securefileshare.share.dto.ShareResponse;
 import com.securefileshare.share.entity.ShareRecord;
@@ -28,10 +29,12 @@ public class ShareService {
 
     private final ShareRepository shareRepository;
     private final AuditServiceClient auditServiceClient;
+    private final AuthServiceClient authServiceClient;
 
-    public ShareService(ShareRepository shareRepository, AuditServiceClient auditServiceClient) {
+    public ShareService(ShareRepository shareRepository, AuditServiceClient auditServiceClient, AuthServiceClient authServiceClient) {
         this.shareRepository = shareRepository;
         this.auditServiceClient = auditServiceClient;
+        this.authServiceClient = authServiceClient;
     }
 
     /**
@@ -87,6 +90,10 @@ public class ShareService {
 
         ShareRecord saved = shareRepository.save(record);
         auditServiceClient.logEvent(ownerId.toString(), "CREATE_SHARE", saved.getFileName());
+
+        // Notify auth-service to send share/invite email to recipient
+        authServiceClient.notifyShare(request.getRecipientUsername(), ownerId.toString(), request.getFileName());
+
         log.info("Share link created successfully with ID: {}", saved.getId());
         return ShareResponse.fromEntity(saved, baseUrl);
     }

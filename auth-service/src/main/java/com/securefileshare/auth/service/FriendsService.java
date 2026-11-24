@@ -29,15 +29,18 @@ public class FriendsService {
     private final FriendRequestRepository friendRequestRepository;
     private final FriendshipRepository friendshipRepository;
     private final InviteRepository inviteRepository;
+    private final EmailService emailService;
 
     public FriendsService(UserRepository userRepository,
                           FriendRequestRepository friendRequestRepository,
                           FriendshipRepository friendshipRepository,
-                          InviteRepository inviteRepository) {
+                          InviteRepository inviteRepository,
+                          EmailService emailService) {
         this.userRepository = userRepository;
         this.friendRequestRepository = friendRequestRepository;
         this.friendshipRepository = friendshipRepository;
         this.inviteRepository = inviteRepository;
+        this.emailService = emailService;
     }
 
     @Transactional(readOnly = true)
@@ -47,11 +50,21 @@ public class FriendsService {
     }
 
     @Transactional
-    public void sendFriendRequest(UUID requesterId, String friendCode) {
+    public void sendFriendRequest(UUID requesterId, String emailOrFriendCode) {
         User requester = userRepository.findById(requesterId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Requester not found"));
-        User addressee = userRepository.findByFriendCode(friendCode)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found with friend code: " + friendCode));
+
+        String identifier = emailOrFriendCode.toLowerCase().trim();
+        Optional<User> addresseeOpt = userRepository.findByEmail(identifier)
+                .or(() -> userRepository.findByFriendCode(emailOrFriendCode));
+
+        if (addresseeOpt.isEmpty()) {
+            emailService.sendFriendInviteEmail(emailOrFriendCode, requester.getUsername());
+            log.info("Sent friend invite email to unregistered recipient {}", emailOrFriendCode);
+            return;
+        }
+
+        User addressee = addresseeOpt.get();
 
         if (requester.getId().equals(addressee.getId())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Cannot send friend request to yourself");
@@ -96,6 +109,10 @@ public class FriendsService {
         } else {
             friendRequestRepository.save(new FriendRequest(requester, addressee, RequestStatus.PENDING));
         }
+
+        // Send friend request email notification
+        emailService.sendFriendRequestEmail(addressee.getEmail(), requester.getUsername());
+
         log.info("Friend request sent from {} to {}", requesterId, addressee.getId());
     }
 

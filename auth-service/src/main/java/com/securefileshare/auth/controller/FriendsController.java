@@ -24,8 +24,13 @@ public class FriendsController {
     @PostMapping("/requests")
     public ResponseEntity<ApiResponse<Void>> sendFriendRequest(
             @AuthenticationPrincipal UUID userId,
-            @RequestParam String friendCode) {
-        friendsService.sendFriendRequest(userId, friendCode);
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String friendCode) {
+        String identifier = email != null && !email.isBlank() ? email : friendCode;
+        if (identifier == null || identifier.isBlank()) {
+            throw new com.securefileshare.common.exception.ApiException(org.springframework.http.HttpStatus.BAD_REQUEST, "Email or friend code is required");
+        }
+        friendsService.sendFriendRequest(userId, identifier);
         return ResponseEntity.ok(ApiResponse.success("Friend request processed successfully"));
     }
 
