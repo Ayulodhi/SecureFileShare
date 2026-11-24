@@ -9,6 +9,7 @@ import { SharesPage } from './pages/SharesPage';
 import { FriendsPage } from './pages/FriendsPage';
 import { AuditPage } from './pages/AuditPage';
 import { KeysPage } from './pages/KeysPage';
+import { DecryptWorkbenchPage } from './pages/DecryptWorkbenchPage';
 import { ShareAccessPage } from './pages/ShareAccessPage';
 import { ToastContainer } from './components/Toast';
 
@@ -62,6 +63,7 @@ function AppContent() {
       )}
       {currentTab === 'shares' && <SharesPage />}
       {currentTab === 'friends' && <FriendsPage />}
+      {currentTab === 'decrypt' && <DecryptWorkbenchPage />}
       {currentTab === 'audit' && <AuditPage />}
       {currentTab === 'keys' && <KeysPage />}
     </Layout>
