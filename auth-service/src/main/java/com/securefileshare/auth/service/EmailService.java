@@ -22,12 +22,19 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
     private final String fromEmail;
+    private final String appBaseUrl;
 
     public EmailService(
             JavaMailSender mailSender,
-            @Value("${spring.mail.username:noreply@securefileshare.com}") String fromEmail) {
+            @Value("${spring.mail.username:noreply@securefileshare.com}") String fromEmail,
+            @Value("${app.base-url:http://localhost:3000}") String appBaseUrl) {
         this.mailSender = mailSender;
         this.fromEmail = fromEmail;
+        this.appBaseUrl = appBaseUrl;
+    }
+
+    public EmailService(JavaMailSender mailSender, String fromEmail) {
+        this(mailSender, fromEmail, "http://localhost:3000");
     }
 
     /**
@@ -110,7 +117,7 @@ public class EmailService {
             message.setSubject("Secure File Share - Action Required: Document Shared With You");
             message.setText("Hello,\n\n" + senderUsername + " has shared a secure document (" + documentName +
                     ") with you on Secure File Share.\n\n" +
-                    "You do not have an account yet. Please sign up at http://localhost:3000/register to create an account and decrypt your shared file.");
+                    "You do not have an account yet. Please sign up at " + appBaseUrl + "/register to create an account and decrypt your shared file.");
             mailSender.send(message);
             log.info("Document share invite email sent successfully to {}", toEmail);
             return CompletableFuture.completedFuture(null);
@@ -133,7 +140,7 @@ public class EmailService {
             message.setTo(toEmail);
             message.setSubject("Secure File Share - Friend Invitation");
             message.setText("Hello,\n\n" + senderUsername + " has invited you to connect on Secure File Share.\n\n" +
-                    "Please sign up at http://localhost:3000/register to create your account and connect with them.");
+                    "Please sign up at " + appBaseUrl + "/register to create your account and connect with them.");
             mailSender.send(message);
             log.info("Friend invite email sent successfully to unregistered recipient {}", toEmail);
             return CompletableFuture.completedFuture(null);

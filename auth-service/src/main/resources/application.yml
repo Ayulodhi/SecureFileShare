@@ -93,3 +93,6 @@ management:
   endpoint:
     health:
       show-details: when_authorized
+
+app:
+  base-url: ${APP_BASE_URL:http://localhost:3000}
