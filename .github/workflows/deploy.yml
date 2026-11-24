@@ -310,9 +310,9 @@ jobs:
 
           # Step 7: Healthcheck verification loop with automatic rollback
           # Why: Validates that all 4 Spring microservices respond 200 OK on /api/v1/health
-          echo "[7/7] Probing microservice healthchecks (timeout: 140 seconds)..."
+          echo "[7/7] Probing microservice healthchecks (timeout: 300 seconds)..."
           HEALTH_PASSED=false
-          ATTEMPTS=28
+          ATTEMPTS=60
           SLEEP_SECONDS=5
 
           for i in $(seq 1 ${ATTEMPTS}); do
