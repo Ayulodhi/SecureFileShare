@@ -5,6 +5,7 @@ import com.securefileshare.auth.entity.*;
 import com.securefileshare.auth.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,17 +31,28 @@ public class FriendsService {
     private final FriendshipRepository friendshipRepository;
     private final InviteRepository inviteRepository;
     private final EmailService emailService;
+    private final String appBaseUrl;
+
+    public FriendsService(UserRepository userRepository,
+                          FriendRequestRepository friendRequestRepository,
+                          FriendshipRepository friendshipRepository,
+                          InviteRepository inviteRepository,
+                          EmailService emailService,
+                          @Value("${app.base-url:http://localhost:3000}") String appBaseUrl) {
+        this.userRepository = userRepository;
+        this.friendRequestRepository = friendRequestRepository;
+        this.friendshipRepository = friendshipRepository;
+        this.inviteRepository = inviteRepository;
+        this.emailService = emailService;
+        this.appBaseUrl = appBaseUrl;
+    }
 
     public FriendsService(UserRepository userRepository,
                           FriendRequestRepository friendRequestRepository,
                           FriendshipRepository friendshipRepository,
                           InviteRepository inviteRepository,
                           EmailService emailService) {
-        this.userRepository = userRepository;
-        this.friendRequestRepository = friendRequestRepository;
-        this.friendshipRepository = friendshipRepository;
-        this.inviteRepository = inviteRepository;
-        this.emailService = emailService;
+        this(userRepository, friendRequestRepository, friendshipRepository, inviteRepository, emailService, "http://localhost:3000");
     }
 
     @Transactional(readOnly = true)
@@ -60,8 +72,14 @@ public class FriendsService {
 
         if (addresseeOpt.isEmpty()) {
             try {
-                emailService.sendFriendInviteEmail(emailOrFriendCode, requester.getUsername());
-                log.info("Sent friend invite email to unregistered recipient {}", emailOrFriendCode);
+                String inviteCode = "SFS-INV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+                Instant expiresAt = Instant.now().plusSeconds(7L * 24 * 60 * 60);
+                Invite invite = new Invite(requester, inviteCode, expiresAt, 1);
+                inviteRepository.save(invite);
+
+                String inviteUrl = appBaseUrl + "/register?invite=" + inviteCode;
+                emailService.sendFriendInviteEmail(emailOrFriendCode, requester.getUsername(), inviteUrl);
+                log.info("Sent friend invite email with link to unregistered recipient {}", emailOrFriendCode);
             } catch (Exception e) {
                 log.warn("Failed to dispatch friend invite email to {}: {}", emailOrFriendCode, e.getMessage());
             }
