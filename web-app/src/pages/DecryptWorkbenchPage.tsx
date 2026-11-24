@@ -199,14 +199,13 @@ export function DecryptWorkbenchPage() {
             <div>
               <label
                 style={{
-                  display: 'block',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
                   fontSize: '0.8125rem',
                   fontWeight: 600,
                   color: 'var(--text-secondary)',
                   marginBottom: '0.35rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
                 }}
               >
                 <Code size={14} color="var(--accent-primary)" />
