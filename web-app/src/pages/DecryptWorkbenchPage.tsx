@@ -3,13 +3,14 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { showToast } from '../components/Toast';
 import { base64ToArrayBuffer } from '../crypto/webCryptoService';
-import { Key, Unlock, FileText, Upload, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Key, Unlock, FileText, Upload, ShieldCheck, AlertCircle, Code } from 'lucide-react';
 
 export function DecryptWorkbenchPage() {
   const [encryptedFile, setEncryptedFile] = useState<File | null>(null);
   const [ivBase64, setIvBase64] = useState('');
   const [wrappedKeyBase64, setWrappedKeyBase64] = useState('');
   const [originalName, setOriginalName] = useState('');
+  const [jsonMetadataInput, setJsonMetadataInput] = useState('');
   const [decryptedBlobUrl, setDecryptedBlobUrl] = useState<string | null>(null);
   const [decryptedFileName, setDecryptedFileName] = useState<string>('');
   const [decrypting, setDecrypting] = useState(false);
@@ -25,6 +26,21 @@ export function DecryptWorkbenchPage() {
     }
   };
 
+  const handleJsonMetadataChange = (val: string) => {
+    setJsonMetadataInput(val);
+    try {
+      const data = JSON.parse(val);
+      if (data.iv) setIvBase64(data.iv);
+      if (data.wrappedKey || data.aesKey || data.key) setWrappedKeyBase64(data.wrappedKey || data.aesKey || data.key);
+      if (data.originalName || data.fileName) setOriginalName(data.originalName || data.fileName);
+      if (data.iv || data.wrappedKey || data.aesKey) {
+        showToast('Metadata parameters auto-filled from JSON!', 'success');
+      }
+    } catch {
+      // not yet valid json, ignore
+    }
+  };
+
   const handleDecrypt = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!encryptedFile) {
@@ -32,7 +48,7 @@ export function DecryptWorkbenchPage() {
       return;
     }
     if (!ivBase64.trim()) {
-      setError('Initialization Vector (IV) is required.');
+      setError('Initialization Vector (IV) is required. Paste JSON metadata or enter IV manually.');
       return;
     }
     if (!wrappedKeyBase64.trim()) {
@@ -78,7 +94,7 @@ export function DecryptWorkbenchPage() {
 
       showToast('File decrypted successfully!', 'success');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Decryption failed. Invalid IV, key, or corrupted ciphertext.';
+      const msg = err instanceof Error ? err.message : 'Decryption failed. Invalid IV, key, or corrupted ciphertext tag.';
       setError(msg);
       showToast('Decryption failed: ' + msg, 'error');
     } finally {
@@ -147,7 +163,7 @@ export function DecryptWorkbenchPage() {
                 style={{
                   border: '2px dashed var(--border-glass)',
                   borderRadius: 'var(--radius-md)',
-                  padding: '1.5rem',
+                  padding: '1.25rem',
                   textAlign: 'center',
                   background: 'rgba(255, 255, 255, 0.02)',
                   cursor: 'pointer',
@@ -167,16 +183,52 @@ export function DecryptWorkbenchPage() {
                     cursor: 'pointer',
                   }}
                 />
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                  <Upload size={24} color="var(--accent-primary)" />
-                  <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
+                  <Upload size={22} color="var(--accent-primary)" />
+                  <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)' }}>
                     {encryptedFile ? encryptedFile.name : 'Click or drop encrypted file here'}
                   </span>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>
                     {encryptedFile ? `${(encryptedFile.size / 1024).toFixed(1)} KB` : 'Supports any .enc binary package'}
                   </span>
                 </div>
               </div>
+            </div>
+
+            {/* JSON Metadata Quick Auto-Fill */}
+            <div>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  color: 'var(--text-secondary)',
+                  marginBottom: '0.35rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+              >
+                <Code size={14} color="var(--accent-primary)" />
+                Quick Auto-Fill (Paste JSON Metadata)
+              </label>
+              <textarea
+                value={jsonMetadataInput}
+                onChange={(e) => handleJsonMetadataChange(e.target.value)}
+                placeholder={'{\n  "iv": "...",\n  "wrappedKey": "...",\n  "originalName": "document.pdf"\n}'}
+                rows={3}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'var(--bg-primary)',
+                  border: '1px solid var(--border-glass)',
+                  color: 'var(--text-primary)',
+                  fontFamily: 'monospace',
+                  fontSize: '0.75rem',
+                  resize: 'vertical',
+                }}
+              />
             </div>
 
             <div>
@@ -186,7 +238,7 @@ export function DecryptWorkbenchPage() {
                   fontSize: '0.8125rem',
                   fontWeight: 600,
                   color: 'var(--text-secondary)',
-                  marginBottom: '0.5rem',
+                  marginBottom: '0.35rem',
                 }}
               >
                 Initialization Vector (IV - Base64)
@@ -198,7 +250,7 @@ export function DecryptWorkbenchPage() {
                 placeholder="e.g. dGhpcy1pcy1hbi1pdg=="
                 style={{
                   width: '100%',
-                  padding: '0.75rem 1rem',
+                  padding: '0.65rem 0.85rem',
                   borderRadius: 'var(--radius-md)',
                   background: 'var(--bg-primary)',
                   border: '1px solid var(--border-glass)',
@@ -216,10 +268,10 @@ export function DecryptWorkbenchPage() {
                   fontSize: '0.8125rem',
                   fontWeight: 600,
                   color: 'var(--text-secondary)',
-                  marginBottom: '0.5rem',
+                  marginBottom: '0.35rem',
                 }}
               >
-                AES Symmetric Key (Base64 Raw / Wrapped)
+                AES Symmetric Key (Base64)
               </label>
               <input
                 type="text"
@@ -228,7 +280,7 @@ export function DecryptWorkbenchPage() {
                 placeholder="e.g. c3ltbWV0cmljLWtleS1iYXNlNjQ="
                 style={{
                   width: '100%',
-                  padding: '0.75rem 1rem',
+                  padding: '0.65rem 0.85rem',
                   borderRadius: 'var(--radius-md)',
                   background: 'var(--bg-primary)',
                   border: '1px solid var(--border-glass)',
@@ -246,7 +298,7 @@ export function DecryptWorkbenchPage() {
                   fontSize: '0.8125rem',
                   fontWeight: 600,
                   color: 'var(--text-secondary)',
-                  marginBottom: '0.5rem',
+                  marginBottom: '0.35rem',
                 }}
               >
                 Decrypted Output Filename
@@ -258,7 +310,7 @@ export function DecryptWorkbenchPage() {
                 placeholder="document.pdf"
                 style={{
                   width: '100%',
-                  padding: '0.75rem 1rem',
+                  padding: '0.65rem 0.85rem',
                   borderRadius: 'var(--radius-md)',
                   background: 'var(--bg-primary)',
                   border: '1px solid var(--border-glass)',

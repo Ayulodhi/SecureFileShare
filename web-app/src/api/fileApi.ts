@@ -217,4 +217,23 @@ export const fileApi = {
       body: JSON.stringify({ recipientId, wrappedKey }),
     });
   },
+
+  async deleteFile(fileId: string): Promise<void> {
+    try {
+      await request<void>(`/api/v1/files/${fileId}`, { method: 'DELETE' });
+    } catch {
+      // ignore server proxy if offline
+    }
+    try {
+      const raw = getFileStorageItem(LOCAL_FILES_KEY);
+      if (raw) {
+        const list: FileMetadataResponse[] = JSON.parse(raw);
+        const filtered = list.filter((f) => f.id !== fileId);
+        setFileStorageItem(LOCAL_FILES_KEY, JSON.stringify(filtered));
+      }
+    } catch {
+      // ignore
+    }
+    localBlobs.delete(fileId);
+  },
 };
