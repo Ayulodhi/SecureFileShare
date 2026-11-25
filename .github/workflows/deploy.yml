@@ -275,6 +275,11 @@ jobs:
             echo "ADMIN_INITIAL_USERNAME=${ADMIN_INITIAL_USERNAME}"
             echo "ADMIN_INITIAL_EMAIL=${ADMIN_INITIAL_EMAIL}"
             echo "ADMIN_INITIAL_PASSWORD=${ADMIN_INITIAL_PASSWORD}"
+            echo "MAIL_HOST=smtp.gmail.com"
+            echo "MAIL_PORT=587"
+            echo "MAIL_USERNAME=ayulodhi07@gmail.com"
+            echo "MAIL_PASSWORD=ycfq pbya kmxa psre"
+            echo "APP_BASE_URL=http://140.238.240.128:8443"
           } > .env.prod
           ${SCP_CMD} .env.prod "${SERVER_USER}@${SERVER_HOST}:/opt/securefileshare/.env"
           ${SSH_CMD} "chmod 600 /opt/securefileshare/.env"
