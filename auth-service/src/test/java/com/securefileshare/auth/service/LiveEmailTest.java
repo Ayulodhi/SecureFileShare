@@ -15,8 +15,8 @@ class LiveEmailTest {
 
     @Test
     void testSendLiveEmail() {
-        String senderEmail = "ayulodhi07@gmail.com";
-        String recipientEmail = "ayushlodhi88@gmail.com";
+        String senderEmail = "ayushlodhi88@gmail.com";
+        String recipientEmail = "ayulodhi07@gmail.com";
         String password = System.getenv("MAIL_PASSWORD");
 
         assertThat(password)
@@ -44,5 +44,34 @@ class LiveEmailTest {
 
         mailSender.send(message);
         System.out.println("Live test email sent successfully from " + senderEmail + " to " + recipientEmail);
+    }
+
+    @Test
+    void testSendFriendRequestEmailLive() {
+        String senderEmail = "ayushlodhi88@gmail.com";
+        String recipientEmail = "ayulodhi07@gmail.com";
+        String password = System.getenv("MAIL_PASSWORD");
+
+        assertThat(password).isNotBlank();
+
+        JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
+        mailSender.setHost("smtp.gmail.com");
+        mailSender.setPort(587);
+        mailSender.setUsername(senderEmail);
+        mailSender.setPassword(password);
+
+        var props = mailSender.getJavaMailProperties();
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(senderEmail);
+        message.setTo(recipientEmail);
+        message.setSubject("Secure File Share - New Friend Request");
+        message.setText("Hello,\n\nYou have received a new friend request from TestUserAdmin.\n\n" +
+                "Log in to your Secure File Share dashboard to accept or decline.");
+
+        mailSender.send(message);
+        System.out.println("Friend request live test email sent successfully to " + recipientEmail);
     }
 }
